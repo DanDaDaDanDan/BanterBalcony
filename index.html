@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Situator - AI Scenario Simulator</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎭</text></svg>">
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="js/app.js"></script>
+</head>
+<body x-data="situatorApp()">
+    <div class="app-container">
+        <!-- Navigation -->
+        <nav class="nav-bar">
+            <div class="nav-content">
+                <h1 class="app-title">Situator</h1>
+                <div class="nav-buttons">
+                    <button @click="currentView = 'simulator'" :class="{'active': currentView === 'simulator'}">Simulator</button>
+                    <button @click="currentView = 'scenarios'" :class="{'active': currentView === 'scenarios'}">Scenarios</button>
+                    <button @click="currentView = 'settings'" :class="{'active': currentView === 'settings'}">Settings</button>
+                    <button @click="currentView = 'debug'" :class="{'active': currentView === 'debug'}">Debug</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Simulator View -->
+            <div x-show="currentView === 'simulator'" class="simulator-view">
+                <!-- Chat Interface - Now Full Width -->
+                <div class="chat-panel-full">
+                    <div class="chat-header">
+                        <h2>Conversation</h2>
+                        <div class="scenario-dropdown" x-data="{ open: false }" @click.away="open = false">
+                            <button @click="open = !open" class="new-scenario-btn">
+                                Start Scenario
+                                <svg class="dropdown-arrow" :class="{'rotate': open}" width="12" height="12" viewBox="0 0 12 12">
+                                    <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="2" fill="none"/>
+                                </svg>
+                            </button>
+                            <div x-show="open" x-transition class="dropdown-menu">
+                                <template x-for="(scenario, index) in availableTemplates" :key="index">
+                                    <button @click="quickStart(scenario); open = false" class="dropdown-item">
+                                        <span class="scenario-name" x-text="scenario.name"></span>
+                                        <span class="scenario-summary" x-text="scenario.summary"></span>
+                                    </button>
+                                </template>
+                                <div class="dropdown-divider"></div>
+                                <button @click="currentView = 'scenarios'; open = false" class="dropdown-item manage-link">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M8 2a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0V9H3a1 1 0 110-2h4V3a1 1 0 011-1z"/>
+                                    </svg>
+                                    Browse Templates
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-messages" x-ref="chatMessages">
+                        <template x-for="(message, index) in messages" :key="index">
+                            <div class="message" :class="getMessageClass(message)">
+                                <div class="message-sender" x-text="message.sender"></div>
+                                <div class="message-bubble">
+                                    <div x-text="message.content"></div>
+                                </div>
+                            </div>
+                        </template>
+                        <!-- AI Thinking Indicator -->
+                        <div x-show="processing" class="message-left thinking-indicator">
+                            <div class="message-bubble thinking-bubble">
+                                <div class="thinking-dots">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                            <div class="message-sender">AI is thinking...</div>
+                        </div>
+                    </div>
+                    <div class="chat-input">
+                        <textarea 
+                            x-model="currentInput" 
+                            @keydown="handleInputKeydown($event)"
+                            placeholder="Type dialog or [actions in brackets]..."
+                            :disabled="!apiKey || processing"
+                            rows="1"
+                        ></textarea>
+                        <button @click="sendMessage()" :disabled="!apiKey || processing || !currentInput.trim()" class="send-button">
+                            <span x-show="!processing">↑</span>
+                            <span x-show="processing">...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scenarios View -->
+            <div x-show="currentView === 'scenarios'" class="scenarios-view">
+                <div class="scenarios-container">
+                    <!-- Prompt to select scenario -->
+                    <div x-show="showScenarioPrompt" class="scenario-prompt">
+                        <div class="prompt-message">
+                            <h3>Select a Scenario to Start</h3>
+                            <p>Choose from the available templates below to begin your simulation.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="scenario-templates">
+                        <div class="scenario-list">
+                            <template x-for="(scenario, index) in availableTemplates" :key="index">
+                                <div class="scenario-card" :class="{'selected': currentScenario && currentScenario.name === scenario.name}">
+                                    <div class="scenario-header">
+                                        <h5 x-text="scenario.name"></h5>
+                                    </div>
+                                    <p x-text="scenario.summary"></p>
+                                    <div class="scenario-actions">
+                                        <button @click="selectAndStart(scenario)" class="select-start-btn">
+                                            <span x-show="showScenarioPrompt">Select & Start</span>
+                                            <span x-show="!showScenarioPrompt">Start</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                        
+                        <div x-show="availableTemplates.length === 0" class="no-templates">
+                            <p>No scenario templates available. Please check that templates are properly configured in the manifest.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings View -->
+            <div x-show="currentView === 'settings'" class="settings-view">
+                <div class="settings-container">
+                    <div class="settings-info">
+                        <p>All data is stored locally in your browser. Nothing is sent to the cloud except API calls to AI providers.</p>
+                    </div>
+                    
+                    <!-- Provider Selection -->
+                    <div class="settings-group">
+                        <h3>AI Provider</h3>
+                        <div class="form-group">
+                            <label>Select Provider</label>
+                            <select x-model="selectedProvider" @change="saveSettings()">
+                                <option value="openai">OpenAI</option>
+                                <option value="anthropic">Anthropic Claude</option>
+                                <option value="google">Google Gemini</option>
+                                <option value="xai">xAI Grok</option>
+                                <option value="deepseek">DeepSeek</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- OpenAI Configuration -->
+                    <div class="settings-group" x-show="selectedProvider === 'openai'">
+                        <h3>OpenAI Configuration</h3>
+                        <form @submit.prevent="">
+                            <div class="form-group">
+                                <label>API Key</label>
+                                <input 
+                                    type="password" 
+                                    x-model="openaiKey" 
+                                    @change="saveSettings()"
+                                    placeholder="Enter your OpenAI API key"
+                                    autocomplete="off"
+                                />
+                            </div>
+                        </form>
+                        
+                        <div class="form-group">
+                            <label>Model</label>
+                            <select x-model="openaiModel" @change="saveSettings()">
+                                <option value="gpt-4o">GPT-4o</option>
+                                <option value="o1">O1</option>
+                                <option value="o3-mini">O3 Mini</option>
+                                <option value="o3">O3</option>
+                                <option value="o4-mini">O4 Mini</option>
+                                <option value="gpt-4.1">GPT-4.1</option>
+                                <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
+                                <option value="gpt-4.1-nano">GPT-4.1 Nano</option>
+                                <option value="gpt-4.5-preview">GPT-4.5 Preview</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Anthropic Configuration -->
+                    <div class="settings-group" x-show="selectedProvider === 'anthropic'">
+                        <h3>Anthropic Configuration</h3>
+                        <form @submit.prevent="">
+                            <div class="form-group">
+                                <label>API Key</label>
+                                <input 
+                                    type="password" 
+                                    x-model="anthropicKey" 
+                                    @change="saveSettings()"
+                                    placeholder="Enter your Anthropic API key"
+                                    autocomplete="off"
+                                />
+                            </div>
+                        </form>
+                        
+                        <div class="form-group">
+                            <label>Model</label>
+                            <select x-model="anthropicModel" @change="saveSettings()">
+                                <option value="claude-opus-4-20250514">Claude Opus 4</option>
+                                <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                                <option value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</option>
+                                <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet v2</option>
+                                <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Google Configuration -->
+                    <div class="settings-group" x-show="selectedProvider === 'google'">
+                        <h3>Google Gemini Configuration</h3>
+                        <form @submit.prevent="">
+                            <div class="form-group">
+                                <label>API Key</label>
+                                <input 
+                                    type="password" 
+                                    x-model="googleKey" 
+                                    @change="saveSettings()"
+                                    placeholder="Enter your Google AI API key"
+                                    autocomplete="off"
+                                />
+                            </div>
+                        </form>
+                        
+                        <div class="form-group">
+                            <label>Model</label>
+                            <select x-model="googleModel" @change="saveSettings()">
+                                <option value="gemini-2.5-flash-preview-05-20">Gemini 2.5 Flash Preview</option>
+                                <option value="gemini-2.5-pro-preview-05-06">Gemini 2.5 Pro Preview</option>
+                                <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                                <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash-Lite</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- xAI Configuration -->
+                    <div class="settings-group" x-show="selectedProvider === 'xai'">
+                        <h3>xAI Grok Configuration</h3>
+                        <form @submit.prevent="">
+                            <div class="form-group">
+                                <label>API Key</label>
+                                <input 
+                                    type="password" 
+                                    x-model="xaiKey" 
+                                    @change="saveSettings()"
+                                    placeholder="Enter your xAI API key"
+                                    autocomplete="off"
+                                />
+                            </div>
+                        </form>
+                        
+                        <div class="form-group">
+                            <label>Model</label>
+                            <select x-model="xaiModel" @change="saveSettings()">
+                                <option value="grok-3">Grok 3</option>
+                                <option value="grok-3-mini">Grok 3 Mini</option>
+                                <option value="grok-3-fast">Grok 3 Fast</option>
+                                <option value="grok-3-mini-fast">Grok 3 Mini Fast</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- DeepSeek Configuration -->
+                    <div class="settings-group" x-show="selectedProvider === 'deepseek'">
+                        <h3>DeepSeek Configuration</h3>
+                        <form @submit.prevent="">
+                            <div class="form-group">
+                                <label>API Key</label>
+                                <input 
+                                    type="password" 
+                                    x-model="deepseekKey" 
+                                    @change="saveSettings()"
+                                    placeholder="Enter your DeepSeek API key"
+                                    autocomplete="off"
+                                />
+                            </div>
+                        </form>
+                        
+                        <div class="form-group">
+                            <label>Model</label>
+                            <select x-model="deepseekModel" @change="saveSettings()">
+                                <option value="deepseek-chat">DeepSeek Chat</option>
+                                <option value="deepseek-reasoner">DeepSeek Reasoner</option>
+                                <option value="deepseek-coder">DeepSeek Coder</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Temperature Control -->
+                    <div class="settings-group" x-show="supportsTemperature">
+                        <h3>Temperature Control</h3>
+                        <div class="form-group">
+                            <label>Temperature: <span x-text="temperature.toFixed(1)"></span></label>
+                            <input 
+                                type="range" 
+                                x-model="temperature" 
+                                min="0" 
+                                max="2" 
+                                step="0.1"
+                                @input="saveSettings()"
+                                class="temperature-slider"
+                            />
+                            <div class="temperature-description">
+                                <small>Lower values (0.0-0.5) make outputs more focused and deterministic. Higher values (0.5-2.0) make outputs more creative and varied.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Temperature Notice for Reasoning Models -->
+                    <div class="settings-group" x-show="!supportsTemperature">
+                        <h3>Temperature Control</h3>
+                        <div class="form-group">
+                            <div class="temperature-notice">
+                                <p>⚠️ The selected model (<span x-text="selectedModel"></span>) is a reasoning model that doesn't support temperature control. Temperature is fixed at 1.0.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Debug View -->
+            <div x-show="currentView === 'debug'" class="debug-view">
+                <div class="debug-container">
+                    <div class="debug-controls">
+                        <label class="debug-toggle">
+                            <input type="checkbox" x-model="debugEnabled" @change="saveSettings()">
+                            Enable Debug Logging
+                        </label>
+                        <label class="debug-toggle">
+                            <input type="checkbox" x-model="debugPrettyMode" @change="saveSettings()">
+                            Pretty JSON Mode
+                        </label>
+                    </div>
+                    
+                    <div class="debug-log">
+                        <template x-for="(entry, index) in debugLog" :key="index">
+                            <div class="debug-entry" :class="entry.type">
+                                <div class="debug-header">
+                                    <span class="debug-timestamp" x-text="entry.timestamp"></span>
+                                    <span class="debug-type" x-text="entry.type.toUpperCase()"></span>
+                                    <span class="debug-provider" x-text="entry.provider"></span>
+                                    <span class="debug-model" x-text="entry.model"></span>
+                                </div>
+                                <div class="debug-content">
+                                    <div class="debug-section" x-show="entry.request">
+                                        <div class="debug-section-header">
+                                            <h4>Request</h4>
+                                            <button @click="copyToClipboard(JSON.stringify(entry.request, null, 2))" class="copy-json-btn" title="Copy JSON to clipboard">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <pre class="debug-json" x-html="formatDebugJSON(entry.request)"></pre>
+                                    </div>
+                                    <div class="debug-section" x-show="entry.response">
+                                        <div class="debug-section-header">
+                                            <h4>Response</h4>
+                                            <button @click="copyToClipboard(JSON.stringify(entry.response, null, 2))" class="copy-json-btn" title="Copy JSON to clipboard">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <pre class="debug-json" x-html="formatDebugJSON(entry.response)"></pre>
+                                    </div>
+                                    <div class="debug-section" x-show="entry.error">
+                                        <h4>Error</h4>
+                                        <pre class="debug-error" x-text="entry.error"></pre>
+                                    </div>
+                                    <div class="debug-section" x-show="entry.duration">
+                                        <h4>Duration</h4>
+                                        <span class="debug-duration" x-text="entry.duration + 's'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        <div x-show="debugLog.length === 0" class="debug-empty">
+                            No debug entries yet. Enable debug logging and make some API calls to see them here.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html> 
