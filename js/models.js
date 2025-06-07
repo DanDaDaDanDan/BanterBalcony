@@ -54,14 +54,17 @@ export class AIModels {
         }
     }
 
-    async callOpenAIAPI(systemPrompt) {
+    async callOpenAIAPI(systemPrompt, userPrompt) {
         // Build messages array
         const messages = [
             {
                 role: 'system',
                 content: systemPrompt
             },
-            ...this.app.conversationHistory
+            {
+                role: 'user',
+                content: userPrompt
+            }
         ];
         
         const body = {
@@ -87,14 +90,11 @@ export class AIModels {
         );
     }
     
-    async callAnthropicAPI(systemPrompt) {
+    async callAnthropicAPI(systemPrompt, userPrompt) {
         const body = {
             model: this.app.anthropicModel,
             system: systemPrompt,
-            messages: this.app.conversationHistory.map(msg => ({
-                role: msg.role === 'system' ? 'assistant' : msg.role,
-                content: msg.content
-            })),
+            messages: [{ role: 'user', content: userPrompt }],
             temperature: this.app.effectiveTemperature
         };
         
@@ -111,17 +111,12 @@ export class AIModels {
         );
     }
     
-    async callGoogleAPI(systemPrompt) {
+    async callGoogleAPI(systemPrompt, userPrompt) {
         const body = {
             contents: [
                 {
                     role: 'user',
-                    parts: [{
-                        text: systemPrompt + `
-
-Conversation history:
-` + this.app.conversationHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n')
-                    }]
+                    parts: [{ text: systemPrompt + '\n\nUser request: ' + userPrompt }]
                 }
             ],
             generationConfig: {
@@ -143,15 +138,12 @@ Conversation history:
         );
     }
     
-    async callXAIAPI(systemPrompt) {
+    async callXAIAPI(systemPrompt, userPrompt) {
         const body = {
             model: this.app.xaiModel,
             messages: [
-                {
-                    role: 'system',
-                    content: systemPrompt
-                },
-                ...this.app.conversationHistory
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
             ],
             temperature: this.app.effectiveTemperature,
             response_format: { type: "json_object" }
@@ -169,15 +161,12 @@ Conversation history:
         );
     }
     
-    async callDeepSeekAPI(systemPrompt) {
+    async callDeepSeekAPI(systemPrompt, userPrompt) {
         const body = {
             model: this.app.deepseekModel,
             messages: [
-                {
-                    role: 'system',
-                    content: systemPrompt
-                },
-                ...this.app.conversationHistory
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
             ],
             temperature: this.app.effectiveTemperature,
             response_format: { type: "json_object" }

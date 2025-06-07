@@ -7,7 +7,9 @@ export class ChatManager {
     // Message handling
     getMessageClass(message) {
         if (message.type === 'system') return 'message-center';
-        if (message.sender === 'You') return 'message-right';
+        if (message.sender === 'User') return 'message-center user-input';
+        if (message.type === 'npc-left') return 'message-left';
+        if (message.type === 'npc-right') return 'message-right';
         return 'message-left';
     }
     
@@ -19,26 +21,33 @@ export class ChatManager {
         
         // Add user message
         this.app.messages.push({
-            sender: 'You',
+            sender: 'User',
             content: userMessage,
             type: 'user'
-        });
-        
-        // Add to conversation history
-        this.app.conversationHistory.push({
-            role: 'user',
-            content: userMessage
         });
         
         // Process with AI
         await this.processWithAI(userMessage);
     }
     
+    // Build contextual coaching guidance based on current configuration
+    buildCoachingGuidance() {
+        let guidance = this.app.naturalPromptingGuide;
+        
+        // If no ElevenLabs key is configured, remove the audio tags section
+        if (!this.app.elevenlabsKey) {
+            // Remove the audio tags section from the guidance
+            guidance = guidance.replace(/## Audio Tags \(when using voice synthesis\)[\s\S]*?(?=## Response Format|$)/m, '');
+        }
+        
+        return guidance;
+    }
+    
     async processWithAI(userInput) {
-        if (!this.app.currentScenario) {
+        if (!this.app.currentPersona) {
             this.app.messages.push({
                 sender: 'System',
-                content: 'Please start a new scenario first.',
+                content: 'Please select a persona first.',
                 type: 'system'
             });
             return;
@@ -47,121 +56,62 @@ export class ChatManager {
         this.app.processing = true;
         
         try {
-            let response;
-            // Handle both string and array formats for systemPrompt
-            const systemPrompt = Array.isArray(this.app.currentScenario.systemPrompt) 
-                ? this.app.currentScenario.systemPrompt.join('\n')
-                : this.app.currentScenario.systemPrompt;
+            // Get system prompt from the current persona
+            const personaPrompt = Array.isArray(this.app.currentPersona.systemPrompt) 
+                ? this.app.currentPersona.systemPrompt.join('\n')
+                : this.app.currentPersona.systemPrompt;
             
-            // Replace <CURRENT SCENARIO DATA> placeholder with actual scenario data
-            let processedSystemPrompt = systemPrompt;
-            if (this.app.scenarioData && systemPrompt.includes('<CURRENT SCENARIO DATA>')) {
-                const scenarioJSON = JSON.stringify(this.app.scenarioData, null, 2);
-                processedSystemPrompt = systemPrompt.replace('<CURRENT SCENARIO DATA>', scenarioJSON);
-            }
+            // Build contextual coaching guidance
+            const coachingGuidance = this.buildCoachingGuidance();
             
-            // Always append the consistent JSON structure that the code expects
-			const jsonStructure = `
+            const systemContent = `${personaPrompt}\n\n${coachingGuidance}`;
+            const userContent = userInput;
 
-## RESPONSE FORMAT
-
-Respond with a JSON object containing:
-* dialog: array of {speaker: string, text: string} - ONLY actual spoken words (what characters say). Do NOT include actions, body language, or narrative descriptions.
-* observableChanges:
-    - string describing only SIGNIFICANT actions or changes that are noteworthy (new objects appearing, important movements, suspicious behavior)
-	- avoid minor details like tone of voice, small gestures, or obvious reactions
-	- this field can be blank if nothing particularly noteworthy happens
-* internalNotes: string with hidden thoughts, motivations, background events (AI reference only - never revealed to player)
-* peopleUpdates: array of {name: string, observable: string} where 'observable' contains ONLY visible/audible changes
-
-IMPORTANT: Respond ONLY with valid JSON in the exact format shown below. Do not include any text before or after the JSON.
-
-EXAMPLE JSON FORMAT:
-{
-    "dialog": 
-	[
-        {
-			"speaker": "Character Name", 
-			"text": "What they say"
-		}
-    ],
-    "observableChanges": "Description of significant actions or changes",
-    "internalNotes": "AI reference notes",
-    "peopleUpdates": 
-	[
-        {
-			"name": "Character Name", 
-			"observable": "Visible changes"
-		}
-    ]
-}`;
-            
-            // Build complete system prompt with scenario context
-            let fullSystemPrompt = processedSystemPrompt + '\n\n' + jsonStructure;
-            
-            // Append scenario context if available
-            if (this.app.scenarioContext) {
-                fullSystemPrompt += this.app.scenarioContext;
-            }
-            
-            // Debug log to see which provider is being used
+            // Log for debugging
             console.log('Processing with provider:', this.app.selectedProvider);
-            console.log('API key length:', this.app.apiKey ? this.app.apiKey.length : 0);
             
+            let response;
             switch(this.app.selectedProvider) {
                 case 'anthropic':
-                    response = await this.app.aiModels.callAnthropicAPI(fullSystemPrompt);
+                    response = await this.app.aiModels.callAnthropicAPI(systemContent, userContent);
                     break;
                 case 'google':
-                    response = await this.app.aiModels.callGoogleAPI(fullSystemPrompt);
+                    response = await this.app.aiModels.callGoogleAPI(systemContent, userContent);
                     break;
                 case 'xai':
-                    response = await this.app.aiModels.callXAIAPI(fullSystemPrompt);
+                    response = await this.app.aiModels.callXAIAPI(systemContent, userContent);
                     break;
                 case 'deepseek':
-                    response = await this.app.aiModels.callDeepSeekAPI(fullSystemPrompt);
+                    response = await this.app.aiModels.callDeepSeekAPI(systemContent, userContent);
                     break;
                 default:
-                    response = await this.app.aiModels.callOpenAIAPI(fullSystemPrompt);
+                    response = await this.app.aiModels.callOpenAIAPI(systemContent, userContent);
             }
             
             const aiResponse = response;
             
-            // Add dialog messages
-            if (aiResponse.dialog) {
-                aiResponse.dialog.forEach(msg => {
+            // Handle new two-speaker dialogue format
+            if (aiResponse.dialogue && Array.isArray(aiResponse.dialogue)) {
+                // Generate audio for the dialogue
+                const audioUrl = await this.generateAudio(aiResponse.dialogue);
+
+                // Add messages with alternating speakers
+                aiResponse.dialogue.forEach((msg, index) => {
                     this.app.messages.push({
                         sender: msg.speaker,
                         content: msg.text,
-                        type: 'npc'
+                        type: index % 2 === 0 ? 'npc-left' : 'npc-right', // Alternate left/right
+                        audioUrl: index === aiResponse.dialogue.length - 1 ? audioUrl : null // Attach audio to the last message
                     });
                 });
-            }
-            
-            // Add observableChanges as system message
-            if (aiResponse.observableChanges) {
+            } else {
+                console.warn('AI response did not contain a valid "dialogue" array:', aiResponse);
                 this.app.messages.push({
                     sender: 'System',
-                    content: aiResponse.observableChanges,
+                    content: 'The AI response was not in the expected format. Please check the persona template.',
                     type: 'system'
                 });
             }
-            
-            // Update people
-            if (aiResponse.peopleUpdates) {
-                aiResponse.peopleUpdates.forEach(update => {
-                    const person = this.app.people.find(p => p.name === update.name);
-                    if (person) {
-                        person.observable = update.observable;
-                    }
-                });
-            }
-            
-            // Add to conversation history verbatim - pass the full AI response as-is
-            this.app.conversationHistory.push({
-                role: 'assistant',
-                content: JSON.stringify(aiResponse)
-            });
             
         } catch (error) {
             console.error('AI processing error:', error);
@@ -228,5 +178,70 @@ EXAMPLE JSON FORMAT:
         
         // Enable scrolling if content exceeds max height
         textarea.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
+    }
+    
+    // Generate audio using ElevenLabs API
+    async generateAudio(dialogue) {
+        if (!this.app.elevenlabsKey) {
+            console.log('No ElevenLabs API key configured');
+            return null;
+        }
+        
+        try {
+            // Format dialogue for ElevenLabs
+            const formattedDialogue = dialogue.map(msg => ({
+                text: msg.text,
+                voice_id: this.app.currentPersona.voices[msg.speaker]
+            }));
+            
+            // Log the API call for debugging
+            const requestData = {
+                model_id: 'eleven_v3_multilingual_240628',
+                inputs: formattedDialogue,
+                voice_settings: {
+                    stability: 0.5,
+                    similarity_boost: 0.75
+                }
+            };
+            
+            if (this.app.debugEnabled) {
+                this.app.logDebug('request', 'elevenlabs', 'v3', { request: requestData });
+            }
+            
+            const response = await fetch('https://api.elevenlabs.io/v1/text-to-dialogue', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'xi-api-key': this.app.elevenlabsKey
+                },
+                body: JSON.stringify(requestData)
+            });
+            
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`ElevenLabs API error: ${response.status} - ${error}`);
+            }
+            
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            
+            if (this.app.debugEnabled) {
+                this.app.logDebug('response', 'elevenlabs', 'v3', { 
+                    response: { 
+                        status: response.status,
+                        size: audioBlob.size,
+                        type: audioBlob.type 
+                    } 
+                });
+            }
+            
+            return audioUrl;
+        } catch (error) {
+            console.error('ElevenLabs API error:', error);
+            if (this.app.debugEnabled) {
+                this.app.logDebug('error', 'elevenlabs', 'v3', { error: error.message });
+            }
+            return null;
+        }
     }
 } 

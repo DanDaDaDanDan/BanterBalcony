@@ -1,16 +1,16 @@
 // Import all modules
 import { AIModels } from './models.js';
 import { ChatManager } from './chat.js';
-import { ScenarioManager } from './scenarios.js';
+import { PersonaManager } from './personas.js';
 import { DebugManager } from './debug.js';
 import { SettingsManager } from './settings.js';
 
-window.situatorApp = function() {
+window.banterBalconyApp = function() {
     const app = {
         // View state
-        currentView: 'simulator',
+                    currentView: 'chat',
         processing: false,
-        showScenarioPrompt: false,
+        showPersonaPrompt: false,
         
         // Provider settings
         selectedProvider: localStorage.getItem('selected_provider') || 'openai',
@@ -34,6 +34,9 @@ window.situatorApp = function() {
         // DeepSeek settings
         deepseekKey: localStorage.getItem('deepseek_api_key') || '',
         deepseekModel: localStorage.getItem('deepseek_model') || 'deepseek-chat',
+        
+        // ElevenLabs settings
+        elevenlabsKey: localStorage.getItem('elevenlabs_api_key') || '',
         
         // Temperature settings
         temperature: parseFloat(localStorage.getItem('temperature') || '0.8'),
@@ -86,23 +89,30 @@ window.situatorApp = function() {
             }
         },
         
+        // Method to play audio
+        playAudio(audioUrl) {
+            const audio = new Audio(audioUrl);
+            audio.play();
+        },
+        
         // Chat state
         messages: [],
         currentInput: '',
         
-        // Simulation state
-        people: [],
-        currentScenario: null,
-        conversationHistory: [],
+        // Banter state
+        currentPersona: null,
         
         // Available templates (loaded from manifest only)
         availableTemplates: [],
+        
+        // Prompting guide
+        naturalPromptingGuide: '',
         
         async init() {
             // Initialize managers with the Alpine.js reactive proxy (this)
             this.aiModels = new AIModels(this);
             this.chatManager = new ChatManager(this);
-            this.scenarioManager = new ScenarioManager(this);
+            this.personaManager = new PersonaManager(this);
             this.debugManager = new DebugManager(this);
             this.settingsManager = new SettingsManager(this);
             
@@ -112,11 +122,14 @@ window.situatorApp = function() {
             this.sendMessage = () => this.chatManager.sendMessage();
             this.handleInputKeydown = (event) => this.chatManager.handleInputKeydown(event);
             
-            // Scenario methods
-            this.startNewScenario = () => this.scenarioManager.startNewScenario();
-            this.startScenario = () => this.scenarioManager.startScenario();
-            this.selectAndStart = (scenario) => this.scenarioManager.selectAndStart(scenario);
-            this.quickStart = (scenario) => this.scenarioManager.quickStart(scenario);
+            // Persona methods
+            this.startNewPersona = () => this.personaManager.startNewPersona();
+            this.startPersona = () => this.personaManager.startPersona();
+            this.selectAndStart = (persona) => this.personaManager.selectAndStart(persona);
+            this.quickStart = (persona) => this.personaManager.quickStart(persona);
+            
+            // Audio methods
+            this.playAudio = (audioUrl) => this.playAudio(audioUrl);
             
             // Debug methods
             this.logDebug = (type, provider, model, data) => this.debugManager.logDebug(type, provider, model, data);
@@ -127,6 +140,9 @@ window.situatorApp = function() {
             
             // Load templates from manifest
             await this.loadTemplatesFromManifest();
+            
+            // Load prompting guide
+            await this.loadPromptingGuide();
             
             // Auto-scroll chat
             this.$watch('messages', () => {
@@ -146,10 +162,10 @@ window.situatorApp = function() {
                 });
             });
             
-            // Reset scenario prompt when switching views
+            // Reset persona prompt when switching views
             this.$watch('currentView', (newView, oldView) => {
-                if (oldView === 'scenarios' && newView !== 'scenarios') {
-                    this.showScenarioPrompt = false;
+                if (oldView === 'personas' && newView !== 'personas') {
+                    this.showPersonaPrompt = false;
                 }
             });
             
@@ -184,6 +200,20 @@ window.situatorApp = function() {
                     document.body.removeChild(textArea);
                 }
             };
+        },
+        
+        async loadPromptingGuide() {
+            try {
+                const response = await fetch('./templates/natural_prompting_guide.md');
+                if (response.ok) {
+                    this.naturalPromptingGuide = await response.text();
+                    console.log('Successfully loaded natural prompting guide.');
+                } else {
+                    console.error('Failed to load natural prompting guide.');
+                }
+            } catch (error) {
+                console.error('Error loading prompting guide:', error);
+            }
         },
         
         // Simplified template loading from manifest only (now supporting markdown)
@@ -264,8 +294,8 @@ window.situatorApp = function() {
                     name: frontmatter.name,
                     summary: frontmatter.summary,
                     systemPrompt: sections['System Prompt'] || '',
-                    generationPrompt: sections['Generation Prompt'] || '',
-                    dimensions: this.parseDimensions(sections['Dimensions'] || '')
+                    dimensions: this.parseDimensions(sections['Dimensions'] || ''),
+                    voices: frontmatter.voices || {}
                 };
                 
                 console.log('Built template:', template.name);
@@ -279,6 +309,9 @@ window.situatorApp = function() {
         // Simple YAML parser for name and summary (basic key-value pairs)
         parseSimpleYaml: function(yamlText) {
             const result = {};
+            let currentKey = null;
+            let isInsideObject = false;
+
             const lines = yamlText.split('\n');
             
             for (const line of lines) {
@@ -289,13 +322,29 @@ window.situatorApp = function() {
                         const key = trimmed.substring(0, colonIndex).trim();
                         let value = trimmed.substring(colonIndex + 1).trim();
                         
-                        // Remove quotes if present
-                        if ((value.startsWith('"') && value.endsWith('"')) || 
-                            (value.startsWith("'") && value.endsWith("'"))) {
-                            value = value.slice(1, -1);
+                        // Handle nested object for voices
+                        if (key === 'voices') {
+                            result[key] = {};
+                            currentKey = key;
+                            isInsideObject = true;
+                        } else if (isInsideObject) {
+                            // Remove quotes if present
+                            if ((value.startsWith('"') && value.endsWith('"')) || 
+                                (value.startsWith("'") && value.endsWith("'"))) {
+                                value = value.slice(1, -1);
+                            }
+                            const nestedKey = key.replace(/['"]/g, '');
+                            result[currentKey][nestedKey] = value;
+                        } else {
+                            // Remove quotes if present
+                            if ((value.startsWith('"') && value.endsWith('"')) || 
+                                (value.startsWith("'") && value.endsWith("'"))) {
+                                value = value.slice(1, -1);
+                            }
+                            result[key] = value;
+                            isInsideObject = false;
+                            currentKey = null;
                         }
-                        
-                        result[key] = value;
                     }
                 }
             }
@@ -366,7 +415,7 @@ window.situatorApp = function() {
     return app;
 };
 
-// Dynamically load Alpine.js after situatorApp is defined
+// Dynamically load Alpine.js after banterBalconyApp is defined
 const script = document.createElement('script');
 script.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js';
 script.defer = true;

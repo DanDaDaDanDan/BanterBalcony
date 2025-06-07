@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Situator - AI Scenario Simulator</title>
+            <title>Banter Balcony - AI-Powered Banter Generator</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎭</text></svg>">
     <link rel="stylesheet" href="styles.css">
     <script type="module" src="js/app.js"></script>
 </head>
-<body x-data="situatorApp()">
+<body x-data="banterBalconyApp()">
     <div class="app-container">
         <!-- Navigation -->
         <nav class="nav-bar">
             <div class="nav-content">
-                <h1 class="app-title">Situator</h1>
+                <h1 class="app-title">Banter Balcony</h1>
                 <div class="nav-buttons">
-                    <button @click="currentView = 'simulator'" :class="{'active': currentView === 'simulator'}">Simulator</button>
-                    <button @click="currentView = 'scenarios'" :class="{'active': currentView === 'scenarios'}">Scenarios</button>
+                    <button @click="currentView = 'chat'" :class="{'active': currentView === 'chat'}">Chat</button>
+                    <button @click="currentView = 'personas'" :class="{'active': currentView === 'personas'}">Personas</button>
                     <button @click="currentView = 'settings'" :class="{'active': currentView === 'settings'}">Settings</button>
                     <button @click="currentView = 'debug'" :class="{'active': currentView === 'debug'}">Debug</button>
                 </div>
@@ -25,28 +25,28 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Simulator View -->
-            <div x-show="currentView === 'simulator'" class="simulator-view">
+                    <!-- Chat View -->
+        <div x-show="currentView === 'chat'" class="chat-view">
                 <!-- Chat Interface - Now Full Width -->
                 <div class="chat-panel-full">
                     <div class="chat-header">
                         <h2>Conversation</h2>
-                        <div class="scenario-dropdown" x-data="{ open: false }" @click.away="open = false">
-                            <button @click="open = !open" class="new-scenario-btn">
-                                Start Scenario
+                        <div class="persona-dropdown" x-data="{ open: false }" @click.away="open = false">
+                            <button @click="open = !open" class="new-persona-btn">
+                                Select Persona
                                 <svg class="dropdown-arrow" :class="{'rotate': open}" width="12" height="12" viewBox="0 0 12 12">
                                     <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="2" fill="none"/>
                                 </svg>
                             </button>
                             <div x-show="open" x-transition class="dropdown-menu">
-                                <template x-for="(scenario, index) in availableTemplates" :key="index">
-                                    <button @click="quickStart(scenario); open = false" class="dropdown-item">
-                                        <span class="scenario-name" x-text="scenario.name"></span>
-                                        <span class="scenario-summary" x-text="scenario.summary"></span>
+                                <template x-for="(persona, index) in availableTemplates" :key="index">
+                                    <button @click="quickStart(persona); open = false" class="dropdown-item">
+                                        <span class="persona-name" x-text="persona.name"></span>
+                                        <span class="persona-summary" x-text="persona.summary"></span>
                                     </button>
                                 </template>
                                 <div class="dropdown-divider"></div>
-                                <button @click="currentView = 'scenarios'; open = false" class="dropdown-item manage-link">
+                                <button @click="currentView = 'personas'; open = false" class="dropdown-item manage-link">
                                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                                         <path d="M8 2a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0V9H3a1 1 0 110-2h4V3a1 1 0 011-1z"/>
                                     </svg>
@@ -61,6 +61,9 @@
                                 <div class="message-sender" x-text="message.sender"></div>
                                 <div class="message-bubble">
                                     <div x-text="message.content"></div>
+                                    <button x-show="message.audioUrl" @click="playAudio(message.audioUrl)" class="play-audio-btn" title="Play audio">
+                                        ▶
+                                    </button>
                                 </div>
                             </div>
                         </template>
@@ -80,7 +83,7 @@
                         <textarea 
                             x-model="currentInput" 
                             @keydown="handleInputKeydown($event)"
-                            placeholder="Type dialog or [actions in brackets]..."
+                            placeholder="Type your question or statement..."
                             :disabled="!apiKey || processing"
                             rows="1"
                         ></textarea>
@@ -92,29 +95,29 @@
                 </div>
             </div>
 
-            <!-- Scenarios View -->
-            <div x-show="currentView === 'scenarios'" class="scenarios-view">
-                <div class="scenarios-container">
-                    <!-- Prompt to select scenario -->
-                    <div x-show="showScenarioPrompt" class="scenario-prompt">
+            <!-- Personas View -->
+            <div x-show="currentView === 'personas'" class="personas-view">
+                <div class="personas-container">
+                    <!-- Prompt to select persona -->
+                    <div x-show="showPersonaPrompt" class="persona-prompt">
                         <div class="prompt-message">
-                            <h3>Select a Scenario to Start</h3>
-                            <p>Choose from the available templates below to begin your simulation.</p>
+                            <h3>Select a Persona to Start</h3>
+                            <p>Choose from the available templates below to generate banter.</p>
                         </div>
                     </div>
                     
-                    <div class="scenario-templates">
-                        <div class="scenario-list">
-                            <template x-for="(scenario, index) in availableTemplates" :key="index">
-                                <div class="scenario-card" :class="{'selected': currentScenario && currentScenario.name === scenario.name}">
-                                    <div class="scenario-header">
-                                        <h5 x-text="scenario.name"></h5>
+                    <div class="persona-templates">
+                        <div class="persona-list">
+                            <template x-for="(persona, index) in availableTemplates" :key="index">
+                                <div class="persona-card" :class="{'selected': currentPersona && currentPersona.name === persona.name}">
+                                    <div class="persona-header">
+                                        <h5 x-text="persona.name"></h5>
                                     </div>
-                                    <p x-text="scenario.summary"></p>
-                                    <div class="scenario-actions">
-                                        <button @click="selectAndStart(scenario)" class="select-start-btn">
-                                            <span x-show="showScenarioPrompt">Select & Start</span>
-                                            <span x-show="!showScenarioPrompt">Start</span>
+                                    <p x-text="persona.summary"></p>
+                                    <div class="persona-actions">
+                                        <button @click="selectAndStart(persona)" class="select-start-btn">
+                                            <span x-show="showPersonaPrompt">Select & Generate</span>
+                                            <span x-show="!showPersonaPrompt">Generate</span>
                                         </button>
                                     </div>
                                 </div>
@@ -122,7 +125,7 @@
                         </div>
                         
                         <div x-show="availableTemplates.length === 0" class="no-templates">
-                            <p>No scenario templates available. Please check that templates are properly configured in the manifest.</p>
+                            <p>No persona templates available. Please check that templates are properly configured in the manifest.</p>
                         </div>
                     </div>
                 </div>
@@ -180,6 +183,23 @@
                                 <option value="gpt-4.5-preview">GPT-4.5 Preview</option>
                             </select>
                         </div>
+                    </div>
+
+                    <!-- ElevenLabs Configuration -->
+                    <div class="settings-group">
+                        <h3>ElevenLabs Configuration</h3>
+                        <form @submit.prevent="">
+                            <div class="form-group">
+                                <label>API Key</label>
+                                <input 
+                                    type="password" 
+                                    x-model="elevenlabsKey" 
+                                    @change="saveSettings()"
+                                    placeholder="Enter your ElevenLabs API key"
+                                    autocomplete="off"
+                                />
+                            </div>
+                        </form>
                     </div>
 
                     <!-- Anthropic Configuration -->

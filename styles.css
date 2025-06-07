@@ -93,8 +93,8 @@ body {
     min-height: 0;
 }
 
-/* Simulator View */
-.simulator-view {
+/* Chat View */
+.chat-view {
     display: flex;
     height: 100%;
     min-height: 100%;
@@ -161,20 +161,12 @@ body {
     border-right: 1px solid var(--border-color);
 }
 
-.chat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-color);
-}
-
 .chat-header h2 {
     font-size: 1.25rem;
     font-weight: 600;
 }
 
-.new-scenario-btn {
+.new-persona-btn {
     padding: 0.5rem 1rem;
     background-color: var(--primary-color);
     color: white;
@@ -188,12 +180,12 @@ body {
     gap: 0.5rem;
 }
 
-.new-scenario-btn:hover {
+.new-persona-btn:hover {
     opacity: 0.9;
 }
 
 /* Scenario Dropdown */
-.scenario-dropdown {
+.persona-dropdown {
     position: relative;
 }
 
@@ -245,14 +237,14 @@ body {
     border-radius: 0 0 8px 8px;
 }
 
-.scenario-name {
+.persona-name {
     font-weight: 600;
     font-size: 0.95rem;
     color: var(--text-primary);
     margin-bottom: 0.25rem;
 }
 
-.scenario-summary {
+.persona-summary {
     font-size: 0.8rem;
     color: var(--text-secondary);
     line-height: 1.3;
@@ -365,6 +357,10 @@ body {
     font-size: 1rem;
     line-height: 1.5;
     word-wrap: break-word;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .message-left .message-bubble {
@@ -393,6 +389,43 @@ body {
 
 .message-right .message-sender {
     text-align: right;
+}
+
+/* User input message style */
+.user-input .message-bubble {
+    background-color: #f0f2f4;
+    color: var(--text-primary);
+    font-style: italic;
+}
+
+/* Play audio button */
+.play-audio-btn {
+    background: none;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s, transform 0.1s;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+}
+
+.play-audio-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.message-left .play-audio-btn {
+    color: var(--text-primary);
+}
+
+.message-right .play-audio-btn {
+    color: white;
 }
 
 .chat-input textarea {
@@ -575,38 +608,38 @@ body {
     margin-bottom: 1.5rem;
 }
 
-/* Scenario creator within settings */
-.scenario-creator {
+/* Persona creator within settings */
+.persona-creator {
     border-radius: 8px;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
 }
 
-/* Scenario creator in scenarios view should have white background */
-.scenarios-view .scenario-creator {
+/* Persona creator in personas view should have white background */
+.personas-view .persona-creator {
     background-color: var(--surface-color);
     box-shadow: var(--shadow);
     padding: 2rem;
 }
 
-/* Scenario creator in other contexts (like settings) should have gray background */
-.settings-view .scenario-creator {
+/* Persona creator in other contexts (like settings) should have gray background */
+.settings-view .persona-creator {
     background-color: var(--background-color);
 }
 
-.scenario-creator h4 {
+.persona-creator h4 {
     font-size: 1.1rem;
     margin-bottom: 1rem;
 }
 
-.scenario-creator-header {
+.persona-creator-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
 }
 
-.scenario-creator-header h4 {
+.persona-creator-header h4 {
     margin: 0;
 }
 
@@ -678,7 +711,7 @@ body {
     font-size: 0.875rem;
 }
 
-.save-scenario-btn {
+.save-persona-btn {
     padding: 0.75rem 2rem;
     background-color: var(--primary-color);
     color: white;
@@ -689,7 +722,7 @@ body {
     margin-top: 1.5rem;
 }
 
-.saved-scenarios {
+.saved-personas {
     margin-top: 1.5rem;
     background-color: var(--surface-color);
     border-radius: 12px;
@@ -730,18 +763,18 @@ body {
     opacity: 0.8;
 }
 
-.saved-scenarios h4 {
+.saved-personas h4 {
     font-size: 1.1rem;
     margin-bottom: 1rem;
 }
 
-.scenario-list {
+.persona-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 1rem;
 }
 
-.scenario-card {
+.persona-card {
     background-color: var(--background-color);
     border-radius: 8px;
     padding: 1rem;
@@ -752,23 +785,23 @@ body {
     height: 100%;
 }
 
-.scenario-card:hover {
+.persona-card:hover {
     border-color: var(--primary-color);
     box-shadow: 0 2px 8px rgba(16, 163, 127, 0.1);
 }
 
-.scenario-card.selected {
+.persona-card.selected {
     border-color: var(--primary-color);
     background-color: rgba(16, 163, 127, 0.05);
 }
 
-.scenario-header h5 {
+.persona-header h5 {
     margin: 0;
     font-size: 1rem;
     margin-bottom: 0.5rem;
 }
 
-.scenario-card p {
+.persona-card p {
     color: var(--text-secondary);
     font-size: 0.875rem;
     margin-bottom: 1rem;
@@ -776,7 +809,7 @@ body {
     flex: 1;
 }
 
-.scenario-actions {
+.persona-actions {
     display: flex;
     justify-content: center;
     margin-top: auto;
@@ -807,7 +840,7 @@ body {
 }
 
 /* Built-in template styling */
-.scenario-card.built-in {
+.persona-card.built-in {
     border-color: #60a5fa;
     background-color: rgba(96, 165, 250, 0.05);
 }
@@ -823,7 +856,7 @@ body {
     letter-spacing: 0.05em;
 }
 
-.scenario-actions button {
+.persona-actions button {
     padding: 0.5rem 1rem;
     border: none;
     border-radius: 6px;
@@ -853,16 +886,16 @@ body {
     color: white;
 }
 
-.scenario-actions button:hover {
+.persona-actions button:hover {
     opacity: 0.8;
 }
 
-.scenario-actions button:disabled {
+.persona-actions button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
 
-.scenario-actions button:disabled:hover {
+.persona-actions button:disabled:hover {
     opacity: 0.5;
 }
 
@@ -873,7 +906,7 @@ body {
 
 /* Responsive */
 @media (max-width: 768px) {
-    .simulator-view {
+    .chat-view {
         padding: 1rem;
         gap: 1rem;
         overflow: hidden;
@@ -916,25 +949,25 @@ body {
     }
 }
 
-/* Scenarios View */
-.scenarios-view {
+/* Personas View */
+.personas-view {
     padding: 2rem;
     width: 100%;
     display: flex;
     justify-content: center;
 }
 
-.scenarios-container {
+.personas-container {
     width: 100%;
     max-width: 800px;
 }
 
-.scenarios-container h2 {
+.personas-container h2 {
     font-size: 1.75rem;
     margin-bottom: 2rem;
 }
 
-.scenario-prompt {
+.persona-prompt {
     background-color: rgba(16, 163, 127, 0.1);
     border-radius: 12px;
     padding: 2rem;
@@ -1274,76 +1307,12 @@ body {
     box-shadow: var(--shadow);
 }
 
-/* Scenario templates container */
-.scenario-templates {
+/* Persona templates container */
+.persona-templates {
     background-color: var(--surface-color);
     border-radius: 12px;
     padding: 2rem;
     box-shadow: var(--shadow);
-}
-
-.scenario-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 1rem;
-}
-
-.scenario-card {
-    background-color: var(--background-color);
-    border-radius: 8px;
-    padding: 1rem;
-    border: 1px solid var(--border-color);
-    transition: border-color 0.2s, box-shadow 0.2s;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-
-.scenario-card:hover {
-    border-color: var(--primary-color);
-    box-shadow: 0 2px 8px rgba(16, 163, 127, 0.1);
-}
-
-.scenario-card.selected {
-    border-color: var(--primary-color);
-    background-color: rgba(16, 163, 127, 0.05);
-}
-
-.scenario-header h5 {
-    margin: 0;
-    font-size: 1rem;
-    margin-bottom: 0.5rem;
-}
-
-.scenario-card p {
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    margin-bottom: 1rem;
-    line-height: 1.4;
-    flex: 1;
-}
-
-.scenario-actions {
-    display: flex;
-    justify-content: center;
-    margin-top: auto;
-}
-
-.select-start-btn {
-    padding: 0.75rem 1.5rem;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: opacity 0.2s, transform 0.1s;
-}
-
-.select-start-btn:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
 }
 
 .no-templates {
