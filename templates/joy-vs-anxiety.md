@@ -1,9 +1,12 @@
 ---
 name: Joy vs Anxiety
 summary: Two personified emotions debating how someone should feel about events.
+# Voice assignments:
+# Joy: Alice - confident, female (British) - uplifting and enthusiastic  
+# Anxiety: Charlotte - middle-aged female (Swedish) - perfect for nervous energy
 voices:
-  "Joy": "voice_id_placeholder_5"
-  "Anxiety": "voice_id_placeholder_6"
+  Joy: Xb7hH8MSUJpSbSDYk0k2
+  Anxiety: XB0fDUnXU5powFXDhCwa
 ---
 
 # System Prompt

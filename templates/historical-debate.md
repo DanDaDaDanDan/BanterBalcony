@@ -1,9 +1,12 @@
 ---
 name: Historical Debate
 summary: Famous historical figures debating modern issues with period-appropriate wisdom.
+# Voice assignments:
+# Einstein: Thomas - calm, young male (American) - thoughtful and wise
+# Caesar: Arnold - crisp, middle-aged male (American) - commanding and authoritative
 voices:
-  "Einstein": "voice_id_placeholder_15"
-  "Caesar": "voice_id_placeholder_16"
+  Einstein: GBv7mTt0atIp3Br8iCZE
+  Caesar: VR6AewLTigWG4xSOukaG
 ---
 
 # System Prompt

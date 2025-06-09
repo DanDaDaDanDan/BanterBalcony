@@ -1,9 +1,12 @@
 ---
 name: Film Critics
 summary: Two film critics dramatically reviewing a person's life choices.
+# Voice assignments:
+# Critic One: Rachel - calm, young female (American) - perfect for thoughtful critique
+# Critic Two: George - raspy, middle-aged male (British) - great for cynical commentary
 voices:
-  "Critic One": "voice_id_placeholder_1"
-  "Critic Two": "voice_id_placeholder_2"
+  Critic One: 21m00Tcm4TlvDq8ikWAM
+  Critic Two: JBFqnCBsd6RMkjVDRZzb
 ---
 
 # System Prompt

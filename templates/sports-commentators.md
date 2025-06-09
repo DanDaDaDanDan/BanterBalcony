@@ -1,9 +1,12 @@
 ---
 name: Sports Commentators
 summary: Two energetic sports commentators dramatically analyzing everyday activities.
+# Voice assignments:
+# Commentator One: Antoni - well-rounded, young male (American) - enthusiastic energy
+# Commentator Two: Charlie - casual, middle-aged male (Australian) - dry humor
 voices:
-  "Commentator One": "voice_id_placeholder_7"
-  "Commentator Two": "voice_id_placeholder_8"
+  Commentator One: ErXwobaYiN019PkySvjV
+  Commentator Two: IKne3meq5aSn9XLyUdCD
 ---
 
 # System Prompt

@@ -4,6 +4,7 @@ import { ChatManager } from './chat.js';
 import { PersonaManager } from './personas.js';
 import { DebugManager } from './debug.js';
 import { SettingsManager } from './settings.js';
+import { AudioManager } from './audio.js';
 
 window.banterBalconyApp = function() {
     const app = {
@@ -37,6 +38,7 @@ window.banterBalconyApp = function() {
         
         // ElevenLabs settings
         elevenlabsKey: localStorage.getItem('elevenlabs_api_key') || '',
+        elevenlabsModel: localStorage.getItem('elevenlabs_model') || 'eleven_multilingual_v2',
         
         // Temperature settings
         temperature: parseFloat(localStorage.getItem('temperature') || '0.8'),
@@ -98,6 +100,7 @@ window.banterBalconyApp = function() {
         // Chat state
         messages: [],
         currentInput: '',
+        currentlyPlayingMessageIndex: null,
         
         // Banter state
         currentPersona: null,
@@ -115,6 +118,7 @@ window.banterBalconyApp = function() {
             this.personaManager = new PersonaManager(this);
             this.debugManager = new DebugManager(this);
             this.settingsManager = new SettingsManager(this);
+            this.audioManager = new AudioManager(this);
             
             // Bind methods to this Alpine instance
             // Chat methods
@@ -129,7 +133,9 @@ window.banterBalconyApp = function() {
             this.quickStart = (persona) => this.personaManager.quickStart(persona);
             
             // Audio methods
-            this.playAudio = (audioUrl) => this.playAudio(audioUrl);
+            this.playAudio = (audioUrl, messageIndex) => this.audioManager.playAudio(audioUrl, messageIndex);
+            this.stopAudio = () => this.audioManager.stopAudio();
+            this.isAudioPlaying = (messageIndex) => this.audioManager.isPlaying(messageIndex);
             
             // Debug methods
             this.logDebug = (type, provider, model, data) => this.debugManager.logDebug(type, provider, model, data);

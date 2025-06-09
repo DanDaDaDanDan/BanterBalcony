@@ -92,18 +92,29 @@ export class ChatManager {
             
             // Handle new two-speaker dialogue format
             if (aiResponse.dialogue && Array.isArray(aiResponse.dialogue)) {
-                // Generate audio for the dialogue
-                const audioUrl = await this.generateAudio(aiResponse.dialogue);
-
-                // Add messages with alternating speakers
+                // Add messages first
                 aiResponse.dialogue.forEach((msg, index) => {
                     this.app.messages.push({
                         sender: msg.speaker,
                         content: msg.text,
                         type: index % 2 === 0 ? 'npc-left' : 'npc-right', // Alternate left/right
-                        audioUrl: index === aiResponse.dialogue.length - 1 ? audioUrl : null // Attach audio to the last message
+                        audioUrl: null // Will be set when audio is ready
                     });
                 });
+
+                // Generate audio for the dialogue using AudioManager
+                const audioUrls = await this.app.audioManager.generateDialogueAudio(aiResponse.dialogue);
+                
+                // Attach audio URLs to messages
+                audioUrls.forEach((audioUrl, index) => {
+                    if (audioUrl) {
+                        const messageIndex = this.app.messages.length - aiResponse.dialogue.length + index;
+                        if (this.app.messages[messageIndex]) {
+                            this.app.messages[messageIndex].audioUrl = audioUrl;
+                        }
+                    }
+                });
+
             } else {
                 console.warn('AI response did not contain a valid "dialogue" array:', aiResponse);
                 this.app.messages.push({
@@ -179,69 +190,5 @@ export class ChatManager {
         // Enable scrolling if content exceeds max height
         textarea.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
     }
-    
-    // Generate audio using ElevenLabs API
-    async generateAudio(dialogue) {
-        if (!this.app.elevenlabsKey) {
-            console.log('No ElevenLabs API key configured');
-            return null;
-        }
-        
-        try {
-            // Format dialogue for ElevenLabs
-            const formattedDialogue = dialogue.map(msg => ({
-                text: msg.text,
-                voice_id: this.app.currentPersona.voices[msg.speaker]
-            }));
-            
-            // Log the API call for debugging
-            const requestData = {
-                model_id: 'eleven_v3_multilingual_240628',
-                inputs: formattedDialogue,
-                voice_settings: {
-                    stability: 0.5,
-                    similarity_boost: 0.75
-                }
-            };
-            
-            if (this.app.debugEnabled) {
-                this.app.logDebug('request', 'elevenlabs', 'v3', { request: requestData });
-            }
-            
-            const response = await fetch('https://api.elevenlabs.io/v1/text-to-dialogue', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'xi-api-key': this.app.elevenlabsKey
-                },
-                body: JSON.stringify(requestData)
-            });
-            
-            if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`ElevenLabs API error: ${response.status} - ${error}`);
-            }
-            
-            const audioBlob = await response.blob();
-            const audioUrl = URL.createObjectURL(audioBlob);
-            
-            if (this.app.debugEnabled) {
-                this.app.logDebug('response', 'elevenlabs', 'v3', { 
-                    response: { 
-                        status: response.status,
-                        size: audioBlob.size,
-                        type: audioBlob.type 
-                    } 
-                });
-            }
-            
-            return audioUrl;
-        } catch (error) {
-            console.error('ElevenLabs API error:', error);
-            if (this.app.debugEnabled) {
-                this.app.logDebug('error', 'elevenlabs', 'v3', { error: error.message });
-            }
-            return null;
-        }
-    }
+
 } 

@@ -1,9 +1,12 @@
 ---
 name: Cooking Showdown
 summary: Two chefs passionately advocate life choices using cooking metaphors.
+# Voice assignments:
+# Chef Gourmet: Harry - anxious, young male (American) - meticulous and refined
+# Chef Street Food: James - calm, old male (Australian) - bold and spontaneous
 voices:
-  "Chef Gourmet": "voice_id_placeholder_23"
-  "Chef Street Food": "voice_id_placeholder_24"
+  Chef Gourmet: SOYHLrjzK2X1ezoPC6cr
+  Chef Street Food: ZQe5CZNOzWyzPSCn5a3c
 ---
 
 # System Prompt

@@ -1,9 +1,12 @@
 ---
 name: Literary Characters
 summary: Iconic literary characters debate daily decisions with their distinctive voices.
+# Voice assignments:
+# Sherlock Holmes: Michael - old male (American) - analytical and precise
+# Elizabeth Bennet: Matilda - warm, young female (American) - intelligent and witty
 voices:
-  "Sherlock Holmes": "voice_id_placeholder_17"
-  "Elizabeth Bennet": "voice_id_placeholder_18"
+  Sherlock Holmes: flq6f7yk4E4fJM5XTYuZ
+  Elizabeth Bennet: XrExE9yKIg1WjnnlVkGX
 ---
 
 # System Prompt

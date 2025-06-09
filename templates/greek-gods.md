@@ -1,9 +1,12 @@
 ---
 name: Greek Gods
 summary: Two Greek gods debating ordinary human dilemmas with epic seriousness.
+# Voice assignments:
+# Zeus: Daniel - deep, middle-aged male (British) - authoritative and commanding
+# Hermes: Liam - young male (American) - clever and quick-witted
 voices:
-  "Zeus": "voice_id_placeholder_9"
-  "Hermes": "voice_id_placeholder_10"
+  Zeus: onwK4e9ZLuTAKqWW03F9
+  Hermes: TX3LPaxmHKxFdv7VOQHJ
 ---
 
 # System Prompt

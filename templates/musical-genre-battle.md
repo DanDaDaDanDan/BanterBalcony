@@ -1,9 +1,12 @@
 ---
 name: Musical Genre Battle
 summary: Musicians representing different genres debate topics through their musical philosophies.
+# Voice assignments:
+# Classical Maestro: Josh - deep, young male (American) - elegant and refined
+# Punk Rocker: Sam - raspy, young male (American) - rebellious and energetic
 voices:
-  "Classical Maestro": "voice_id_placeholder_29"
-  "Punk Rocker": "voice_id_placeholder_30"
+  Classical Maestro: TxGEqnHWrfWFTfGW9XjX
+  Punk Rocker: yoZ06aMxZJJ28mfd3POQ
 ---
 
 # System Prompt

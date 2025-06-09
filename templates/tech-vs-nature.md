@@ -1,9 +1,12 @@
 ---
 name: Tech vs Nature
 summary: Anthropomorphized tech vs nature debating your attention and time.
+# Voice assignments:
+# Technology: Chris - casual, middle-aged male (American) - modern and energetic
+# Nature: Emily - calm, young female (American) - peaceful and serene
 voices:
-  "Technology": "voice_id_placeholder_19"
-  "Nature": "voice_id_placeholder_20"
+  Technology: iP95p4xoKVk53GoZ742B
+  Nature: LcfcDJNUP1GQjkzn1xUU
 ---
 
 # System Prompt

@@ -1,9 +1,12 @@
 ---
 name: Inner Band
 summary: Two internal musicians debate your choices through lyrics and musical references.
+# Voice assignments:
+# Folk Singer: Lily - raspy, middle-aged female (British) - warm and contemplative
+# Rock Star: Bill - strong, middle-aged male (American) - bold and passionate
 voices:
-  "Folk Singer": "voice_id_placeholder_11"
-  "Rock Star": "voice_id_placeholder_12"
+  Folk Singer: pFZP5JQG7iQjIQuC4Bku
+  Rock Star: pqHfZKP75CvOlQylNhV4
 ---
 
 # System Prompt

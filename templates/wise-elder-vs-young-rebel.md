@@ -1,9 +1,12 @@
 ---
 name: Wise Elder vs Young Rebel
 summary: Experienced wisdom debates impulsive youthfulness over life decisions.
+# Voice assignments:
+# Wise Elder: George - raspy, middle-aged male (British) - experienced and thoughtful
+# Young Rebel: Ethan - young male (American) - energetic and rebellious
 voices:
-  "Wise Elder": "voice_id_placeholder_21"
-  "Young Rebel": "voice_id_placeholder_22"
+  Wise Elder: JBFqnCBsd6RMkjVDRZzb
+  Young Rebel: g5CIjZEefAph4nQFvHAz
 ---
 
 # System Prompt

@@ -61,8 +61,15 @@
                                 <div class="message-sender" x-text="message.sender"></div>
                                 <div class="message-bubble">
                                     <div x-text="message.content"></div>
-                                    <button x-show="message.audioUrl" @click="playAudio(message.audioUrl)" class="play-audio-btn" title="Play audio">
-                                        ▶
+                                    <button 
+                                        x-show="message.audioUrl" 
+                                        @click="playAudio(message.audioUrl, index)" 
+                                        class="play-audio-btn" 
+                                        :class="{'playing': isAudioPlaying(index)}"
+                                        :title="isAudioPlaying(index) ? 'Stop audio' : 'Play audio'"
+                                    >
+                                        <span x-show="!isAudioPlaying(index)">▶</span>
+                                        <span x-show="isAudioPlaying(index)">⏹</span>
                                     </button>
                                 </div>
                             </div>
@@ -102,7 +109,7 @@
                     <div x-show="showPersonaPrompt" class="persona-prompt">
                         <div class="prompt-message">
                             <h3>Select a Persona to Start</h3>
-                            <p>Choose from the available templates below to generate banter.</p>
+                            <p>Choose from the available templates below to select a persona.</p>
                         </div>
                     </div>
                     
@@ -116,8 +123,8 @@
                                     <p x-text="persona.summary"></p>
                                     <div class="persona-actions">
                                         <button @click="selectAndStart(persona)" class="select-start-btn">
-                                            <span x-show="showPersonaPrompt">Select & Generate</span>
-                                            <span x-show="!showPersonaPrompt">Generate</span>
+                                            <span x-show="showPersonaPrompt">Select & Start</span>
+                                            <span x-show="!showPersonaPrompt">Select</span>
                                         </button>
                                     </div>
                                 </div>
@@ -200,6 +207,18 @@
                                 />
                             </div>
                         </form>
+                        
+                        <div class="form-group">
+                            <label>Model</label>
+                            <select x-model="elevenlabsModel" @change="saveSettings()">
+                                <option value="eleven_multilingual_v2">Eleven Multilingual V2</option>
+                                <option value="eleven_turbo_v2_5">Eleven Turbo V2.5</option>
+                                <option value="eleven_turbo_v2">Eleven Turbo V2</option>
+                                <option value="eleven_flash_v2_5">Eleven Flash V2.5</option>
+                                <option value="eleven_flash_v2">Eleven Flash V2</option>
+                                <option value="eleven_monolingual_v1">Eleven Monolingual V1</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Anthropic Configuration -->
