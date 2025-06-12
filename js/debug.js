@@ -51,23 +51,73 @@ export class DebugManager {
             return '';
         }
         
-        if (!this.app.debugPrettyMode) {
-            // Raw mode - compact JSON string, single line
-            return JSON.stringify(obj);
+        try {
+            // Create a safe copy that handles circular references and limits depth
+            const safeObj = this.createSafeDebugObject(obj, 0, 10); // Max depth of 10
+            
+            if (!this.app.debugPrettyMode) {
+                // Raw mode - compact JSON string, single line
+                return JSON.stringify(safeObj);
+            }
+            
+            // Pretty mode with syntax highlighting
+            let jsonStr = JSON.stringify(safeObj, null, 2);
+            
+            // In pretty mode, replace escaped newlines with actual newlines for better readability
+            // But keep escaped quotes as-is to maintain valid JSON structure
+            jsonStr = jsonStr.replace(/\\n/g, '\n');
+            
+            // Replace literal \t with actual tabs for better formatting
+            jsonStr = jsonStr.replace(/\\t/g, '\t');
+            
+            // Apply syntax highlighting
+            return this.syntaxHighlightJSON(jsonStr);
+        } catch (error) {
+            // If all else fails, return a safe error message
+            return `<span class="json-error">Error formatting JSON: ${error.message}</span>`;
+        }
+    }
+
+    // Create a safe copy of an object that handles circular references and limits depth
+    createSafeDebugObject(obj, currentDepth = 0, maxDepth = 10, seen = new WeakSet()) {
+        // Prevent infinite recursion
+        if (currentDepth >= maxDepth) {
+            return '[Max depth reached]';
         }
         
-        // Pretty mode with syntax highlighting
-        let jsonStr = JSON.stringify(obj, null, 2);
+        // Handle primitive types
+        if (obj === null || typeof obj !== 'object') {
+            return obj;
+        }
         
-        // In pretty mode, replace escaped newlines with actual newlines for better readability
-        // But keep escaped quotes as-is to maintain valid JSON structure
-        jsonStr = jsonStr.replace(/\\n/g, '\n');
+        // Handle circular references
+        if (seen.has(obj)) {
+            return '[Circular Reference]';
+        }
         
-        // Replace literal \t with actual tabs for better formatting
-        jsonStr = jsonStr.replace(/\\t/g, '\t');
+        // Mark this object as seen
+        seen.add(obj);
         
-        // Apply syntax highlighting
-        return this.syntaxHighlightJSON(jsonStr);
+        try {
+            if (Array.isArray(obj)) {
+                return obj.map(item => this.createSafeDebugObject(item, currentDepth + 1, maxDepth, seen));
+            } else {
+                const result = {};
+                for (const [key, value] of Object.entries(obj)) {
+                    // Skip functions and undefined values
+                    if (typeof value === 'function' || value === undefined) {
+                        continue;
+                    }
+                    result[key] = this.createSafeDebugObject(value, currentDepth + 1, maxDepth, seen);
+                }
+                return result;
+            }
+        } catch (error) {
+            return `[Error processing object: ${error.message}]`;
+        } finally {
+            // Remove from seen set when done (for this branch)
+            seen.delete(obj);
+        }
     }
     
     // Syntax highlighting for JSON

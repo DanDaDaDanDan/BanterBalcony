@@ -442,6 +442,39 @@ body {
     100% { transform: scale(1); }
 }
 
+/* Conversation audio controls */
+.conversation-audio-controls {
+    display: flex;
+    justify-content: center;
+    padding: 1rem 0;
+    margin: 0.5rem 0;
+}
+
+.conversation-play-btn {
+    padding: 0.75rem 1.5rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: opacity 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.conversation-play-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.conversation-play-btn.playing {
+    background-color: var(--secondary-color);
+    animation: pulse 2s infinite;
+}
+
 .chat-input textarea {
     flex: 1;
     padding: 0.75rem 1rem;
@@ -1269,6 +1302,12 @@ body {
     font-style: italic;
 }
 
+.debug-json .json-error {
+    color: #FF3B30;
+    font-style: italic;
+    font-weight: 600;
+}
+
 /* Dark mode JSON syntax highlighting */
 @media (prefers-color-scheme: dark) {
     .debug-json .json-key {
@@ -1289,6 +1328,10 @@ body {
     
     .debug-json .json-null {
         color: #CCCCCC;
+    }
+    
+    .debug-json .json-error {
+        color: #FF6B6B;
     }
 }
 

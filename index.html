@@ -61,9 +61,10 @@
                                 <div class="message-sender" x-text="message.sender"></div>
                                 <div class="message-bubble">
                                     <div x-text="message.content"></div>
+                                    <!-- Individual play buttons (only for ElevenLabs - has individual audio files) -->
                                     <button 
                                         x-show="message.audioUrl" 
-                                        @click="playAudio(message.audioUrl, index)" 
+                                        @click="playMessageAudio(message, index)" 
                                         class="play-audio-btn" 
                                         :class="{'playing': isAudioPlaying(index)}"
                                         :title="isAudioPlaying(index) ? 'Stop audio' : 'Play audio'"
@@ -74,6 +75,23 @@
                                 </div>
                             </div>
                         </template>
+                        
+                        <!-- Conversation Audio Controls -->
+                        <!-- Conversation Play Button -->
+                        <div x-show="(ttsProvider === 'elevenlabs' && messages.some(m => m.conversationAudioUrl)) || (ttsProvider === 'gemini' && messages.some(m => m.audioData))" class="conversation-audio-controls">
+                            <button 
+                                @click="ttsProvider === 'elevenlabs' ? 
+                                    playConversationAudio(messages.find(m => m.conversationAudioUrl)?.conversationAudioUrl) :
+                                    playGeminiConversationAudio()"
+                                class="conversation-play-btn"
+                                :class="{'playing': isConversationPlaying()}"
+                                :title="isConversationPlaying() ? 'Stop conversation' : 'Play conversation'"
+                            >
+                                <span x-show="!isConversationPlaying()">▶ Play Conversation</span>
+                                <span x-show="isConversationPlaying()">⏹ Stop Conversation</span>
+                            </button>
+                        </div>
+                        
                         <!-- AI Thinking Indicator -->
                         <div x-show="processing" class="message-left thinking-indicator">
                             <div class="message-bubble thinking-bubble">
@@ -192,8 +210,23 @@
                         </div>
                     </div>
 
-                    <!-- ElevenLabs Configuration -->
+                    <!-- TTS Provider Selection -->
                     <div class="settings-group">
+                        <h3>Text-to-Speech Provider</h3>
+                        <div class="form-group">
+                            <label>Select TTS Provider</label>
+                            <select x-model="ttsProvider" @change="saveSettings()">
+                                <option value="elevenlabs">ElevenLabs</option>
+                                <option value="gemini">Gemini TTS</option>
+                            </select>
+                            <div class="temperature-description" style="margin-top: 0.5rem;">
+                                <small>Choose which service to use for voice synthesis. This is independent of your AI text generation provider.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ElevenLabs Configuration -->
+                    <div class="settings-group" x-show="ttsProvider === 'elevenlabs'">
                         <h3>ElevenLabs Configuration</h3>
                         <form @submit.prevent="">
                             <div class="form-group">
@@ -217,6 +250,38 @@
                                 <option value="eleven_flash_v2_5">Eleven Flash V2.5</option>
                                 <option value="eleven_flash_v2">Eleven Flash V2</option>
                                 <option value="eleven_monolingual_v1">Eleven Monolingual V1</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Gemini TTS Configuration -->
+                    <div class="settings-group" x-show="ttsProvider === 'gemini'">
+                        <h3>Gemini TTS Configuration</h3>
+                        <form @submit.prevent="">
+                            <div class="form-group">
+                                <label>API Key</label>
+                                <input 
+                                    type="password" 
+                                    x-model="googleKey" 
+                                    @change="saveSettings()"
+                                    placeholder="Enter your Google AI API key"
+                                    autocomplete="off"
+                                />
+                                <div class="temperature-description" style="margin-top: 0.5rem;">
+                                    <small>Uses the same API key as Google Gemini text generation.</small>
+                                </div>
+                            </div>
+                        </form>
+                        
+                        <div class="form-group">
+                            <label>Voice</label>
+                            <select x-model="geminiVoice" @change="saveSettings()">
+                                <option value="Kore">Kore (Default)</option>
+                                <option value="Zephyr">Zephyr</option>
+                                <option value="Puck">Puck</option>
+                                <option value="Charon">Charon</option>
+                                <option value="Fenrir">Fenrir</option>
+                                <option value="Aoede">Aoede</option>
                             </select>
                         </div>
                     </div>
@@ -274,6 +339,8 @@
                                 <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash-Lite</option>
                             </select>
                         </div>
+
+
                     </div>
 
                     <!-- xAI Configuration -->

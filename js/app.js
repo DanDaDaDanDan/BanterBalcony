@@ -27,6 +27,7 @@ window.banterBalconyApp = function() {
         // Google settings
         googleKey: localStorage.getItem('google_api_key') || '',
         googleModel: localStorage.getItem('google_model') || 'gemini-2.5-flash-preview-05-20',
+        geminiVoice: localStorage.getItem('gemini_voice') || 'Kore',
         
         // xAI settings
         xaiKey: localStorage.getItem('xai_api_key') || '',
@@ -39,6 +40,9 @@ window.banterBalconyApp = function() {
         // ElevenLabs settings
         elevenlabsKey: localStorage.getItem('elevenlabs_api_key') || '',
         elevenlabsModel: localStorage.getItem('elevenlabs_model') || 'eleven_multilingual_v2',
+        
+        // TTS Provider settings (independent of text generation)
+        ttsProvider: localStorage.getItem('tts_provider') || 'elevenlabs', // 'elevenlabs' or 'gemini'
         
         // Temperature settings
         temperature: parseFloat(localStorage.getItem('temperature') || '0.8'),
@@ -108,8 +112,9 @@ window.banterBalconyApp = function() {
         // Available templates (loaded from manifest only)
         availableTemplates: [],
         
-        // Prompting guide
-        naturalPromptingGuide: '',
+        // Prompting guides
+        elevenlabsPromptingGuide: '',
+        geminiTTSTextGuide: '',
         
         async init() {
             // Initialize managers with the Alpine.js reactive proxy (this)
@@ -134,8 +139,19 @@ window.banterBalconyApp = function() {
             
             // Audio methods
             this.playAudio = (audioUrl, messageIndex) => this.audioManager.playAudio(audioUrl, messageIndex);
+            this.playMessageAudio = (message, messageIndex) => this.audioManager.playMessageAudio(message, messageIndex);
+            this.playConversationAudio = (conversationAudioUrl) => this.audioManager.playConversationAudio(conversationAudioUrl);
+            this.playGeminiConversationAudio = () => {
+                const message = this.messages.find(m => m.audioData);
+                if (message && message.audioData && message.audioMimeType) {
+                    const audioBlob = this.audioManager.base64ToBlob(message.audioData, message.audioMimeType);
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    this.audioManager.playConversationAudio(audioUrl);
+                }
+            };
             this.stopAudio = () => this.audioManager.stopAudio();
             this.isAudioPlaying = (messageIndex) => this.audioManager.isPlaying(messageIndex);
+            this.isConversationPlaying = () => this.audioManager.isConversationPlaying();
             
             // Debug methods
             this.logDebug = (type, provider, model, data) => this.debugManager.logDebug(type, provider, model, data);
@@ -210,15 +226,25 @@ window.banterBalconyApp = function() {
         
         async loadPromptingGuide() {
             try {
-                const response = await fetch('./templates/natural_prompting_guide.md');
-                if (response.ok) {
-                    this.naturalPromptingGuide = await response.text();
-                    console.log('Successfully loaded natural prompting guide.');
+                // Load ElevenLabs prompting guide
+                const elevenlabsResponse = await fetch('./prompting/elevenlabs_prompting_guide.md');
+                if (elevenlabsResponse.ok) {
+                    this.elevenlabsPromptingGuide = await elevenlabsResponse.text();
+                    console.log('Successfully loaded ElevenLabs prompting guide.');
                 } else {
-                    console.error('Failed to load natural prompting guide.');
+                    console.error('Failed to load ElevenLabs prompting guide.');
+                }
+
+                // Load Gemini TTS text generation guide
+                const geminiTTSResponse = await fetch('./prompting/gemini_tts_text_guide.md');
+                if (geminiTTSResponse.ok) {
+                    this.geminiTTSTextGuide = await geminiTTSResponse.text();
+                    console.log('Successfully loaded Gemini TTS text guide.');
+                } else {
+                    console.error('Failed to load Gemini TTS text guide.');
                 }
             } catch (error) {
-                console.error('Error loading prompting guide:', error);
+                console.error('Error loading prompting guides:', error);
             }
         },
         
@@ -415,6 +441,32 @@ window.banterBalconyApp = function() {
             }
             
             return dimensions;
+        },
+        
+        get effectiveAudioProvider() {
+            return this.ttsProvider;
+        },
+
+        // Get the appropriate TTS model based on the selected Google model
+        get geminiTTSModel() {
+            // Map regular models to their TTS equivalents
+            if (this.googleModel.includes('flash')) {
+                return 'gemini-2.5-flash-preview-tts';
+            } else if (this.googleModel.includes('pro')) {
+                return 'gemini-2.5-pro-preview-tts';
+            } else {
+                // Default to flash for unknown models
+                return 'gemini-2.5-flash-preview-tts';
+            }
+        },
+
+        // Load a template by name from already-loaded templates
+        async loadTemplate(templateName) {
+            const template = this.availableTemplates.find(t => t.name === templateName);
+            if (!template) {
+                throw new Error(`Template not found: ${templateName}`);
+            }
+            return template;
         }
     };
     
