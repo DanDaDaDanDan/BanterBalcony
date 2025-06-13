@@ -7,6 +7,9 @@ summary: Experienced wisdom debates impulsive youthfulness over life decisions.
 voices:
   Wise Elder: JBFqnCBsd6RMkjVDRZzb
   Young Rebel: g5CIjZEefAph4nQFvHAz
+gemini_voices:
+  Wise Elder: Kore
+  Young Rebel: Fenrir
 ---
 
 # System Prompt

@@ -55,23 +55,23 @@ export class DebugManager {
             // Create a safe copy that handles circular references and limits depth
             const safeObj = this.createSafeDebugObject(obj, 0, 10); // Max depth of 10
             
-            if (!this.app.debugPrettyMode) {
-                // Raw mode - compact JSON string, single line
+        if (!this.app.debugPrettyMode) {
+            // Raw mode - compact JSON string, single line
                 return JSON.stringify(safeObj);
-            }
-            
-            // Pretty mode with syntax highlighting
+        }
+        
+        // Pretty mode with syntax highlighting
             let jsonStr = JSON.stringify(safeObj, null, 2);
-            
-            // In pretty mode, replace escaped newlines with actual newlines for better readability
-            // But keep escaped quotes as-is to maintain valid JSON structure
-            jsonStr = jsonStr.replace(/\\n/g, '\n');
-            
-            // Replace literal \t with actual tabs for better formatting
-            jsonStr = jsonStr.replace(/\\t/g, '\t');
-            
-            // Apply syntax highlighting
-            return this.syntaxHighlightJSON(jsonStr);
+        
+        // In pretty mode, replace escaped newlines with actual newlines for better readability
+        // But keep escaped quotes as-is to maintain valid JSON structure
+        jsonStr = jsonStr.replace(/\\n/g, '\n');
+        
+        // Replace literal \t with actual tabs for better formatting
+        jsonStr = jsonStr.replace(/\\t/g, '\t');
+        
+        // Apply syntax highlighting
+        return this.syntaxHighlightJSON(jsonStr);
         } catch (error) {
             // If all else fails, return a safe error message
             return `<span class="json-error">Error formatting JSON: ${error.message}</span>`;
@@ -108,6 +108,13 @@ export class DebugManager {
                     if (typeof value === 'function' || value === undefined) {
                         continue;
                     }
+                    
+                    // Replace base64 audio data with placeholder
+                    if (typeof value === 'string' && this.isBase64AudioData(value)) {
+                        result[key] = `[Base64 Audio Data: ${Math.round(value.length / 1024)}KB]`;
+                        continue;
+                    }
+                    
                     result[key] = this.createSafeDebugObject(value, currentDepth + 1, maxDepth, seen);
                 }
                 return result;
@@ -141,5 +148,18 @@ export class DebugManager {
             }
             return '<span class="' + cls + '">' + match + '</span>';
         });
+    }
+
+    // Detect if a string is likely base64 audio data
+    isBase64AudioData(str) {
+        // Check if it's a long base64 string (likely audio if > 10KB when decoded)
+        if (str.length < 1000) return false;
+        
+        // Check if it looks like base64 (only contains base64 characters)
+        const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+        if (!base64Regex.test(str)) return false;
+        
+        // Additional heuristics: very long strings are likely audio/binary data
+        return str.length > 10000; // Roughly 7.5KB of decoded data
     }
 } 

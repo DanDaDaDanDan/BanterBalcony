@@ -7,6 +7,9 @@ summary: Fantasy creatures argue your next move with magical perspectives.
 voices:
   Dragon: bVMeCyTHy58xNoL34h3p
   Unicorn: piTKgcLEGmPE4e6mEKli
+gemini_voices:
+  Dragon: Charon
+  Unicorn: Zephyr
 ---
 
 # System Prompt

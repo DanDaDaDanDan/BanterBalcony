@@ -7,6 +7,9 @@ summary: Two energetic sports commentators dramatically analyzing everyday activ
 voices:
   Commentator One: ErXwobaYiN019PkySvjV
   Commentator Two: IKne3meq5aSn9XLyUdCD
+gemini_voices:
+  Commentator One: Zephyr
+  Commentator Two: Charon
 ---
 
 # System Prompt

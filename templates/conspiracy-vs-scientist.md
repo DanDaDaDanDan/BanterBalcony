@@ -7,6 +7,9 @@ summary: A paranoid theorist debates with a rational scientist humorously over s
 voices:
   Conspiracy Theorist: N2lVS1w4EtoT3dr4eOWO
   Scientist: nPczCjzI2devNBz1zQrb
+gemini_voices:
+  Conspiracy Theorist: Puck
+  Scientist: Kore
 ---
 
 # System Prompt

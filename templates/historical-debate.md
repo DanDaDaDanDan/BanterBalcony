@@ -7,6 +7,9 @@ summary: Famous historical figures debating modern issues with period-appropriat
 voices:
   Einstein: GBv7mTt0atIp3Br8iCZE
   Caesar: VR6AewLTigWG4xSOukaG
+gemini_voices:
+  Einstein: Kore
+  Caesar: Charon
 ---
 
 # System Prompt

@@ -442,18 +442,18 @@ body {
     100% { transform: scale(1); }
 }
 
-/* Conversation audio controls */
-.conversation-audio-controls {
+/* Conversation controls */
+.conversation-controls {
     display: flex;
     justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
     padding: 1rem 0;
     margin: 0.5rem 0;
 }
 
-.conversation-play-btn {
+.conversation-btn {
     padding: 0.75rem 1.5rem;
-    background-color: var(--primary-color);
-    color: white;
     border: none;
     border-radius: 12px;
     cursor: pointer;
@@ -465,14 +465,28 @@ body {
     gap: 0.5rem;
 }
 
-.conversation-play-btn:hover {
+.conversation-btn:hover {
     opacity: 0.9;
     transform: translateY(-1px);
+}
+
+.conversation-play-btn {
+    background-color: var(--primary-color);
+    color: white;
 }
 
 .conversation-play-btn.playing {
     background-color: var(--secondary-color);
     animation: pulse 2s infinite;
+}
+
+.conversation-save-btn {
+    background-color: #28a745;
+    color: white;
+}
+
+.conversation-save-btn:hover {
+    background-color: #218838;
 }
 
 .chat-input textarea {

@@ -7,6 +7,9 @@ summary: Two internal musicians debate your choices through lyrics and musical r
 voices:
   Folk Singer: pFZP5JQG7iQjIQuC4Bku
   Rock Star: pqHfZKP75CvOlQylNhV4
+gemini_voices:
+  Folk Singer: Aoede
+  Rock Star: Fenrir
 ---
 
 # System Prompt

@@ -7,6 +7,9 @@ summary: A comedic argument between a shoulder angel and devil.
 voices:
   Angel: EXAVITQu4vr4xnSDxMaL
   Devil: pNInz6obpgDQGcFmaJgB
+gemini_voices:
+  Angel: Aoede
+  Devil: Charon
 ---
 
 # System Prompt

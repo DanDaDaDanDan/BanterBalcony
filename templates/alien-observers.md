@@ -7,6 +7,9 @@ summary: Aliens humorously interpret everyday human actions from their perspecti
 voices:
   Alien One: t0jbNlBVZ17f02VDIeMI
   Alien Two: Zlb1dXrM653N07WRdFW3
+gemini_voices:
+  Alien One: Puck
+  Alien Two: Kore
 ---
 
 # System Prompt

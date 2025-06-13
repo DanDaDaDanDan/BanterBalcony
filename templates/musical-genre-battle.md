@@ -7,6 +7,9 @@ summary: Musicians representing different genres debate topics through their mus
 voices:
   Classical Maestro: TxGEqnHWrfWFTfGW9XjX
   Punk Rocker: yoZ06aMxZJJ28mfd3POQ
+gemini_voices:
+  Classical Maestro: Aoede
+  Punk Rocker: Fenrir
 ---
 
 # System Prompt

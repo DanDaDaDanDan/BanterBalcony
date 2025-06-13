@@ -7,6 +7,9 @@ summary: Two Greek gods debating ordinary human dilemmas with epic seriousness.
 voices:
   Zeus: onwK4e9ZLuTAKqWW03F9
   Hermes: TX3LPaxmHKxFdv7VOQHJ
+gemini_voices:
+  Zeus: Charon
+  Hermes: Puck
 ---
 
 # System Prompt

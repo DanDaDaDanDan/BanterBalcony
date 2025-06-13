@@ -57,40 +57,47 @@
                     </div>
                     <div class="chat-messages" x-ref="chatMessages">
                         <template x-for="(message, index) in messages" :key="index">
-                            <div class="message" :class="getMessageClass(message)">
+                            <div :class="getMessageClass(message)">
                                 <div class="message-sender" x-text="message.sender"></div>
                                 <div class="message-bubble">
                                     <div x-text="message.content"></div>
-                                    <!-- Individual play buttons (only for ElevenLabs - has individual audio files) -->
+                                        <!-- Individual play buttons (only for ElevenLabs - has individual audio files) -->
+                                        <button 
+                                            x-show="message.audioUrl" 
+                                            @click="playMessageAudio(message, index)" 
+                                            class="play-audio-btn" 
+                                            :class="{'playing': isAudioPlaying(index)}"
+                                            :title="isAudioPlaying(index) ? 'Stop audio' : 'Play audio'"
+                                        >
+                                            <span x-show="!isAudioPlaying(index)">▶</span>
+                                            <span x-show="isAudioPlaying(index)">⏹</span>
+                                        </button>
+                                    </div>
+                                
+                                <!-- Conversation Play Button - Fixed Position After Each Conversation -->
+                                <div x-show="isLastMessageInConversation(index) && conversationHasAudio(index)" class="conversation-controls">
                                     <button 
-                                        x-show="message.audioUrl" 
-                                        @click="playMessageAudio(message, index)" 
-                                        class="play-audio-btn" 
-                                        :class="{'playing': isAudioPlaying(index)}"
-                                        :title="isAudioPlaying(index) ? 'Stop audio' : 'Play audio'"
+                                        @click="ttsProvider === 'elevenlabs' ? 
+                                            playConversationAudio(getConversationFirstMessage(index)?.conversationAudioUrl) :
+                                            playGeminiConversationAudio(message.conversationId)"
+                                        class="conversation-btn conversation-play-btn"
+                                        :class="{'playing': isConversationPlaying()}"
+                                        :title="isConversationPlaying() ? 'Stop conversation' : 'Play conversation'"
                                     >
-                                        <span x-show="!isAudioPlaying(index)">▶</span>
-                                        <span x-show="isAudioPlaying(index)">⏹</span>
+                                        <span x-show="!isConversationPlaying()">▶ Play Conversation</span>
+                                        <span x-show="isConversationPlaying()">⏹ Stop Conversation</span>
+                                    </button>
+                                    <button 
+                                        @click="saveConversation(message.conversationId)"
+                                        class="conversation-btn conversation-save-btn"
+                                        title="Save conversation"
+                                    >
+                                        💾 Save
                                     </button>
                                 </div>
                             </div>
                         </template>
-                        
-                        <!-- Conversation Audio Controls -->
-                        <!-- Conversation Play Button -->
-                        <div x-show="(ttsProvider === 'elevenlabs' && messages.some(m => m.conversationAudioUrl)) || (ttsProvider === 'gemini' && messages.some(m => m.audioData))" class="conversation-audio-controls">
-                            <button 
-                                @click="ttsProvider === 'elevenlabs' ? 
-                                    playConversationAudio(messages.find(m => m.conversationAudioUrl)?.conversationAudioUrl) :
-                                    playGeminiConversationAudio()"
-                                class="conversation-play-btn"
-                                :class="{'playing': isConversationPlaying()}"
-                                :title="isConversationPlaying() ? 'Stop conversation' : 'Play conversation'"
-                            >
-                                <span x-show="!isConversationPlaying()">▶ Play Conversation</span>
-                                <span x-show="isConversationPlaying()">⏹ Stop Conversation</span>
-                            </button>
-                        </div>
+
                         
                         <!-- AI Thinking Indicator -->
                         <div x-show="processing" class="message-left thinking-indicator">

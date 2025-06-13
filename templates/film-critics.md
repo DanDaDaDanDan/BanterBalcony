@@ -7,6 +7,9 @@ summary: Two film critics dramatically reviewing a person's life choices.
 voices:
   Critic One: 21m00Tcm4TlvDq8ikWAM
   Critic Two: JBFqnCBsd6RMkjVDRZzb
+gemini_voices:
+  Critic One: Aoede
+  Critic Two: Charon
 ---
 
 # System Prompt

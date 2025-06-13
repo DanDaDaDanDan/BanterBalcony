@@ -2,6 +2,8 @@
 
 Create engaging dialogue that brings characters to life through their distinct personalities and natural speech patterns.
 
+*Based on best practices from [Gemini 2.5 Pro TTS research](https://chatgpt.com/s/dr_684b0093f60481919158eefbc32b54c9)*
+
 **Dialogue Principles:**
 • Give each speaker their own voice - unique word choices, rhythm, and personality quirks
 • Use natural conversational flow with interruptions, pauses (...), and emotional reactions
@@ -37,13 +39,21 @@ Since Gemini TTS receives the full dialogue context:
 • Vary vocabulary complexity based on character traits
 • Include breathing spaces with punctuation and phrasing
 
-## KEY PRINCIPLES FOR GEMINI TTS
-Gemini 2.5 TTS relies on:
-1. **Speaker labels** (`Speaker1:` / `Speaker2:`) to assign separate voices.
-2. **Natural-language cues** – emotion, tone, pace, accent – expressed through plain text and punctuation.
-3. **Stage directions in parentheses** for delivery hints.
+## KEY PRINCIPLES FOR GEMINI TTS MULTI-SPEAKER PROMPTING
 
-Avoid square-bracket audio tags; instead provide clear, screenplay-style text.
+Based on [Gemini TTS research](https://ai.google.dev/gemini-api/docs/speech-generation), Gemini 2.5 TTS excels at multi-character dialogue when following these principles:
+
+1. **Speaker labels** (`Speaker1:` / `Speaker2:`) to assign separate voices and maintain character consistency
+2. **Natural-language cues** – emotion, tone, pace, accent – expressed through plain text and punctuation
+3. **Stage directions in parentheses** for delivery hints and emotional context
+4. **Character consistency** – maintain distinct speaking patterns throughout the dialogue
+5. **Contextual understanding** – Gemini processes the full dialogue context for natural flow
+
+**Important Note**: While Gemini TTS can differentiate speakers, it currently has [limitations with per-speaker voice settings](https://discuss.ai.google.dev/t/gemini-tts-ignores-per-speaker-voice-settings-in-multi-character-prompts/84125). Focus on character differentiation through natural language rather than voice parameter settings.
+
+**Voice Assignment in Templates**: All templates now include `gemini_voices` sections with character-to-voice mappings using the available Gemini voices (Kore, Zephyr, Puck, Charon, Fenrir, Aoede). These serve as specifications for potential future support when Gemini improves multi-speaker voice assignment.
+
+Avoid square-bracket audio tags; instead provide clear, screenplay-style text that conveys character personality.
 
 ### Screenplay-style prompt template
 ```
@@ -57,6 +67,34 @@ Speaker2: (enthusiastically) Absolutely! I can't wait!
 • Keep lines short and alternating for snappy banter.<br>
 • Parentheses `(whispering)` `(laughs)` give quick delivery cues.<br>
 • Emojis, ellipses `…`, dashes `–`, CAPS, and interjections shape timing & emphasis.
+
+## CHARACTER DIFFERENTIATION FOR MULTI-SPEAKER DIALOGUE
+
+Since Gemini TTS processes the full dialogue context, focus on these techniques to create distinct characters:
+
+**Vocabulary & Speech Patterns:**
+• **Formal vs Casual**: One speaker uses "certainly" while another says "yeah"
+• **Age-appropriate language**: Younger characters use slang, older ones use more formal terms
+• **Personality quirks**: Nervous characters might stutter, confident ones use short declarative sentences
+• **Cultural/regional expressions**: "Y'all" vs "You guys" vs "Folks"
+
+**Emotional Baseline:**
+• **Optimistic character**: "(cheerfully) Well, that's one way to look at it!"
+• **Pessimistic character**: "(sighs) Of course it would happen today..."
+• **Energetic character**: "(bouncing) Ooh! Ooh! Can we try this?!"
+• **Calm character**: "(thoughtfully) Let's consider all the options..."
+
+**Speaking Rhythm & Style:**
+• **Fast talker**: Short, rapid sentences with minimal pauses
+• **Deliberate speaker**: Longer pauses... strategic emphasis... measured delivery
+• **Interrupting type**: "But wait—" "Actually—" "Oh! Oh!"
+• **Storyteller**: "You know what happened? Well, first..."
+
+**Natural Character Markers:**
+```
+Speaker1: (muttering) Great, just great... (sarcastically) This day keeps getting better.
+Speaker2: (brightly) Hey! Look on the bright side! (enthusiastically) At least it's not raining!
+```
 
 ## PRACTICAL EXPRESSION TECHNIQUES
 | Goal | How to write | Example |

@@ -7,6 +7,9 @@ summary: Two chefs passionately advocate life choices using cooking metaphors.
 voices:
   Chef Gourmet: SOYHLrjzK2X1ezoPC6cr
   Chef Street Food: ZQe5CZNOzWyzPSCn5a3c
+gemini_voices:
+  Chef Gourmet: Aoede
+  Chef Street Food: Fenrir
 ---
 
 # System Prompt

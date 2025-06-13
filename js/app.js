@@ -141,17 +141,56 @@ window.banterBalconyApp = function() {
             this.playAudio = (audioUrl, messageIndex) => this.audioManager.playAudio(audioUrl, messageIndex);
             this.playMessageAudio = (message, messageIndex) => this.audioManager.playMessageAudio(message, messageIndex);
             this.playConversationAudio = (conversationAudioUrl) => this.audioManager.playConversationAudio(conversationAudioUrl);
-            this.playGeminiConversationAudio = () => {
-                const message = this.messages.find(m => m.audioData);
-                if (message && message.audioData && message.audioMimeType) {
-                    const audioBlob = this.audioManager.base64ToBlob(message.audioData, message.audioMimeType);
-                    const audioUrl = URL.createObjectURL(audioBlob);
-                    this.audioManager.playConversationAudio(audioUrl);
-                }
-            };
+            this.playGeminiConversationAudio = (conversationId) => this.audioManager.playGeminiConversationAudio(conversationId);
             this.stopAudio = () => this.audioManager.stopAudio();
             this.isAudioPlaying = (messageIndex) => this.audioManager.isPlaying(messageIndex);
             this.isConversationPlaying = () => this.audioManager.isConversationPlaying();
+            
+            // Save conversation method
+            this.saveConversation = (conversationId) => this.saveConversationToFile(conversationId);
+            
+            // Helper method to check if a message is the last in its conversation
+            this.isLastMessageInConversation = (messageIndex) => {
+                const message = this.messages[messageIndex];
+                if (!message || !message.conversationId) return false;
+                
+                // Check if this is the last message with this conversationId
+                for (let i = messageIndex + 1; i < this.messages.length; i++) {
+                    if (this.messages[i].conversationId === message.conversationId) {
+                        return false; // Found another message in the same conversation
+                    }
+                }
+                return true;
+            };
+            
+            // Helper method to check if a conversation has audio
+            this.conversationHasAudio = (messageIndex) => {
+                const message = this.messages[messageIndex];
+                if (!message || !message.conversationId) return false;
+                
+                // Find the first message of this conversation to check for audio
+                const firstMessage = this.messages.find(m => 
+                    m.conversationId === message.conversationId && m.isConversationStart
+                );
+                
+                if (!firstMessage) return false;
+                
+                const hasElevenLabsAudio = firstMessage.conversationAudioUrl;
+                const hasGeminiAudio = firstMessage.audioData;
+                
+                return (this.ttsProvider === 'elevenlabs' && hasElevenLabsAudio) || 
+                       (this.ttsProvider === 'gemini' && hasGeminiAudio);
+            };
+            
+            // Helper method to get the first message of a conversation
+            this.getConversationFirstMessage = (messageIndex) => {
+                const message = this.messages[messageIndex];
+                if (!message || !message.conversationId) return null;
+                
+                return this.messages.find(m => 
+                    m.conversationId === message.conversationId && m.isConversationStart
+                );
+            };
             
             // Debug methods
             this.logDebug = (type, provider, model, data) => this.debugManager.logDebug(type, provider, model, data);
@@ -316,6 +355,7 @@ window.banterBalconyApp = function() {
                 // Parse YAML frontmatter (simple parser for name and summary)
                 const frontmatter = this.parseSimpleYaml(frontmatterYaml);
                 console.log('Parsed frontmatter:', frontmatter);
+                console.log('Gemini voices found:', frontmatter.gemini_voices);
                 
                 // Parse markdown sections
                 const sections = this.parseMarkdownSections(markdownBody);
@@ -326,8 +366,8 @@ window.banterBalconyApp = function() {
                     name: frontmatter.name,
                     summary: frontmatter.summary,
                     systemPrompt: sections['System Prompt'] || '',
-                    dimensions: this.parseDimensions(sections['Dimensions'] || ''),
-                    voices: frontmatter.voices || {}
+                    voices: frontmatter.voices || {},
+                    gemini_voices: frontmatter.gemini_voices || {}
                 };
                 
                 console.log('Built template:', template.name);
@@ -354,8 +394,8 @@ window.banterBalconyApp = function() {
                         const key = trimmed.substring(0, colonIndex).trim();
                         let value = trimmed.substring(colonIndex + 1).trim();
                         
-                        // Handle nested object for voices
-                        if (key === 'voices') {
+                        // Handle nested object for voices and gemini_voices
+                        if (key === 'voices' || key === 'gemini_voices') {
                             result[key] = {};
                             currentKey = key;
                             isInsideObject = true;
@@ -415,33 +455,7 @@ window.banterBalconyApp = function() {
             return sections;
         },
         
-        // Parse dimensions from markdown list format
-        parseDimensions: function(dimensionsText) {
-            const dimensions = [];
-            if (!dimensionsText) return dimensions;
-            
-            const lines = dimensionsText.split('\n');
-            
-            for (const line of lines) {
-                const trimmed = line.trim();
-                if (trimmed.startsWith('- ')) {
-                    const content = trimmed.substring(2).trim();
-                    const colonIndex = content.indexOf(':');
-                    
-                    if (colonIndex > 0) {
-                        const name = content.substring(0, colonIndex).trim();
-                        const options = content.substring(colonIndex + 1).trim();
-                        
-                        dimensions.push({
-                            name: name,
-                            options: options
-                        });
-                    }
-                }
-            }
-            
-            return dimensions;
-        },
+
         
         get effectiveAudioProvider() {
             return this.ttsProvider;
@@ -465,8 +479,66 @@ window.banterBalconyApp = function() {
             const template = this.availableTemplates.find(t => t.name === templateName);
             if (!template) {
                 throw new Error(`Template not found: ${templateName}`);
-            }
+                    }
             return template;
+        },
+        
+        // Save conversation to text file
+        saveConversationToFile(conversationId) {
+            if (!conversationId) {
+                console.warn('No conversation ID provided for saving');
+                return;
+            }
+            
+            // Find all messages in this conversation
+            const conversationMessages = this.messages.filter(msg => 
+                msg.conversationId === conversationId
+            );
+            
+            if (conversationMessages.length === 0) {
+                console.warn('No messages found for conversation ID:', conversationId);
+                return;
+            }
+            
+            // Format the conversation text
+            let conversationText = '';
+            
+            // Add header with timestamp and persona info
+            const timestamp = new Date().toLocaleString();
+            const personaName = this.currentPersona?.name || 'Unknown Persona';
+            
+            conversationText += `Conversation Export\n`;
+            conversationText += `===================\n`;
+            conversationText += `Date: ${timestamp}\n`;
+            conversationText += `Persona: ${personaName}\n`;
+            conversationText += `Conversation ID: ${conversationId}\n\n`;
+            
+            // Add each message
+            conversationMessages.forEach((message, index) => {
+                conversationText += `${message.sender}:\n`;
+                conversationText += `${message.content}\n\n`;
+            });
+            
+            // Create and download the file
+            const blob = new Blob([conversationText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            // Create filename with timestamp and persona name
+            const filename = `conversation_${personaName}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+            
+            // Create download link and click it
+            const downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            downloadLink.download = filename;
+            downloadLink.style.display = 'none';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            
+            // Clean up the URL
+            URL.revokeObjectURL(url);
+            
+            console.log(`Conversation saved as: ${filename}`);
         }
     };
     

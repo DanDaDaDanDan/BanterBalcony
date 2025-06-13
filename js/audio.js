@@ -519,4 +519,222 @@ export class AudioManager {
     isConversationPlaying() {
         return this.currentlyPlayingMessageIndex === 'conversation';
     }
+
+    // Play Gemini conversation audio (single audio file containing full dialogue)
+    playGeminiConversationAudio(conversationId = null) {
+        let message;
+        if (conversationId) {
+            message = this.app.messages.find(m => m.audioData && m.conversationId === conversationId);
+        } else {
+            // Fallback: find the most recent conversation with audio
+            message = this.app.messages.slice().reverse().find(m => m.audioData);
+        }
+        
+        if (message && message.audioData && message.audioMimeType) {
+            const audioBlob = this.base64ToBlob(message.audioData, message.audioMimeType);
+            const audioUrl = URL.createObjectURL(audioBlob);
+            this.playConversationAudio(audioUrl);
+        }
+    }
+
+    // Generate Gemini audio for dialogue with multi-speaker support
+    async generateGeminiAudioForDialogue(dialogue) {
+        if (!dialogue || dialogue.length === 0) return;
+        
+        // Get speaker voices from current persona's gemini_voices mapping
+        const geminiVoices = this.app.currentPersona.gemini_voices || {};
+        const speakerNames = [...new Set(dialogue.map(msg => msg.speaker))];
+        
+        // Build multi-speaker prompt with voice instructions
+        let fullContext = "You are generating speech for a multi-character dialogue. ";
+        
+        // Add speaker voice descriptions if available
+        if (Object.keys(geminiVoices).length > 0) {
+            fullContext += "Voice assignments:\n";
+            speakerNames.forEach(speaker => {
+                const voiceName = geminiVoices[speaker] || 'Kore';
+                fullContext += `- ${speaker}: Use ${voiceName} voice characteristics\n`;
+            });
+            fullContext += "\n";
+        }
+        
+        fullContext += "Generate natural speech for the following dialogue with distinct voices for each speaker:\n\n";
+        
+        // Format dialogue with clear speaker transitions
+        dialogue.forEach((msg, index) => {
+            fullContext += `${msg.speaker}: ${msg.text}\n`;
+        });
+        
+        // Determine primary voice (first speaker or fallback)
+        const primarySpeaker = dialogue[0]?.speaker;
+        const primaryVoice = geminiVoices[primarySpeaker] || this.app.geminiVoice || 'Kore';
+        
+        // Build speaker voice configs for multi-speaker config
+        const speakerVoiceConfigs = speakerNames.map(speaker => ({
+            speaker: speaker,
+            voiceConfig: {
+                prebuiltVoiceConfig: {
+                    voiceName: geminiVoices[speaker] || 'Kore'
+                }
+            }
+        }));
+
+        // Log voice selection for debugging
+        if (this.app.debugEnabled) {
+            console.log('Gemini multi-speaker setup:', {
+                dialogue: dialogue.map(msg => ({ speaker: msg.speaker, text: msg.text.substring(0, 50) + '...' })),
+                speakerNames,
+                geminiVoices,
+                speakerVoiceConfigs,
+                multiSpeakerEnabled: speakerNames.length > 1,
+                currentPersona: this.app.currentPersona?.name
+            });
+        }
+        
+        const requestBody = {
+            model: this.app.geminiTTSModel,
+            contents: [{
+                parts: [{ text: fullContext }]
+            }],
+            safetySettings: [
+                {
+                    category: "HARM_CATEGORY_HARASSMENT",
+                    threshold: "BLOCK_ONLY_HIGH"
+                },
+                {
+                    category: "HARM_CATEGORY_HATE_SPEECH",
+                    threshold: "BLOCK_ONLY_HIGH"
+                },
+                {
+                    category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    threshold: "BLOCK_ONLY_HIGH"
+                },
+                {
+                    category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    threshold: "BLOCK_ONLY_HIGH"
+                }
+            ],
+            generationConfig: {
+                responseModalities: ["AUDIO"],
+                speechConfig: speakerNames.length > 1 ? {
+                    // Multi-speaker configuration using correct API structure
+                    multiSpeakerVoiceConfig: {
+                        speakerVoiceConfigs: speakerVoiceConfigs
+                    }
+                } : {
+                    // Single speaker configuration
+                    voiceConfig: {
+                        prebuiltVoiceConfig: { 
+                            voiceName: primaryVoice
+                        }
+                    }
+                }
+            }
+        };
+        
+        const startTime = Date.now();
+        if (this.app.debugEnabled) {
+            this.app.logDebug('request','gemini-tts',this.app.geminiTTSModel,{request:requestBody});
+        }
+        
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.app.geminiTTSModel}:generateContent?key=${this.app.googleKey}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Gemini TTS API error: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        
+        if (this.app.debugEnabled){
+            this.app.logDebug('response','gemini-tts',this.app.geminiTTSModel,{response:data,duration:Date.now()-startTime});
+        }
+        
+        if (!data.candidates || data.candidates.length === 0) {
+            throw new Error('No candidates in Gemini TTS response');
+        }
+        
+        const candidate = data.candidates[0];
+        
+        // Extract audio data from response
+        if (candidate.content && candidate.content.parts) {
+            for (const part of candidate.content.parts) {
+                if (part.inlineData && part.inlineData.data) {
+                    const base64Audio = part.inlineData.data;
+                    const audioData = this.convertPCMToWAV(base64Audio);
+                    
+                    // Attach audio to the first message for unified playback
+                    const firstMessageIndex = this.app.messages.length - dialogue.length;
+                    if (this.app.messages[firstMessageIndex]) {
+                        this.app.messages[firstMessageIndex].audioData = audioData;
+                        this.app.messages[firstMessageIndex].audioMimeType = 'audio/wav';
+                        this.app.messages[firstMessageIndex].isGeminiAudio = true;
+                    }
+                    
+                    return;
+                }
+            }
+        }
+
+        throw new Error('No audio data found in Gemini TTS response');
+    }
+
+    // Convert base64 PCM data to base64 WAV data
+    convertPCMToWAV(base64PCM) {
+        // Decode base64 to binary
+        const binaryString = atob(base64PCM);
+        const pcmBytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            pcmBytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        // PCM parameters from Google's documentation
+        const sampleRate = 24000;
+        const numChannels = 1;
+        const bitsPerSample = 16;
+        
+        // Create WAV header
+        const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+        const blockAlign = numChannels * (bitsPerSample / 8);
+        
+        const wavHeader = new ArrayBuffer(44);
+        const dv = new DataView(wavHeader);
+        
+        // RIFF chunk descriptor
+        dv.setUint32(0, 0x52494646, false);             // "RIFF"
+        dv.setUint32(4, 36 + pcmBytes.length, true);    // Chunk size
+        dv.setUint32(8, 0x57415645, false);             // "WAVE"
+        
+        // fmt subchunk
+        dv.setUint32(12, 0x666d7420, false);            // "fmt "
+        dv.setUint32(16, 16, true);                     // Subchunk1Size (16 for PCM)
+        dv.setUint16(20, 1, true);                      // AudioFormat (1 = PCM)
+        dv.setUint16(22, numChannels, true);            // NumChannels
+        dv.setUint32(24, sampleRate, true);             // SampleRate
+        dv.setUint32(28, byteRate, true);               // ByteRate
+        dv.setUint16(32, blockAlign, true);             // BlockAlign
+        dv.setUint16(34, bitsPerSample, true);          // BitsPerSample
+        
+        // data subchunk
+        dv.setUint32(36, 0x64617461, false);            // "data"
+        dv.setUint32(40, pcmBytes.length, true);        // Subchunk2Size
+        
+        // Combine header and PCM data
+        const wavBytes = new Uint8Array(44 + pcmBytes.length);
+        wavBytes.set(new Uint8Array(wavHeader), 0);
+        wavBytes.set(pcmBytes, 44);
+        
+        // Convert back to base64
+        let binary = '';
+        for (let i = 0; i < wavBytes.length; i++) {
+            binary += String.fromCharCode(wavBytes[i]);
+        }
+        return btoa(binary);
+    }
 } 

@@ -7,6 +7,9 @@ summary: Iconic literary characters debate daily decisions with their distinctiv
 voices:
   Sherlock Holmes: flq6f7yk4E4fJM5XTYuZ
   Elizabeth Bennet: XrExE9yKIg1WjnnlVkGX
+gemini_voices:
+  Sherlock Holmes: Kore
+  Elizabeth Bennet: Zephyr
 ---
 
 # System Prompt

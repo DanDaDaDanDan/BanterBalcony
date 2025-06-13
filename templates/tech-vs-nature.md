@@ -7,6 +7,9 @@ summary: Anthropomorphized tech vs nature debating your attention and time.
 voices:
   Technology: iP95p4xoKVk53GoZ742B
   Nature: LcfcDJNUP1GQjkzn1xUU
+gemini_voices:
+  Technology: Charon
+  Nature: Zephyr
 ---
 
 # System Prompt

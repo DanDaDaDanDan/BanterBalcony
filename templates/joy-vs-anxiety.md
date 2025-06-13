@@ -7,6 +7,9 @@ summary: Two personified emotions debating how someone should feel about events.
 voices:
   Joy: Xb7hH8MSUJpSbSDYk0k2
   Anxiety: XB0fDUnXU5powFXDhCwa
+gemini_voices:
+  Joy: Zephyr
+  Anxiety: Puck
 ---
 
 # System Prompt
