@@ -483,62 +483,82 @@ window.banterBalconyApp = function() {
             return template;
         },
         
-        // Save conversation to text file
-        saveConversationToFile(conversationId) {
+        // Save conversation audio to MP3 file
+        async saveConversationToFile(conversationId) {
             if (!conversationId) {
                 console.warn('No conversation ID provided for saving');
                 return;
             }
             
-            // Find all messages in this conversation
-            const conversationMessages = this.messages.filter(msg => 
-                msg.conversationId === conversationId
+            // Find the first message in this conversation (contains the audio data)
+            const firstMessage = this.messages.find(msg => 
+                msg.conversationId === conversationId && msg.isConversationStart
             );
             
-            if (conversationMessages.length === 0) {
-                console.warn('No messages found for conversation ID:', conversationId);
+            if (!firstMessage) {
+                console.warn('No conversation start message found for conversation ID:', conversationId);
                 return;
             }
             
-            // Format the conversation text
-            let conversationText = '';
-            
-            // Add header with timestamp and persona info
-            const timestamp = new Date().toLocaleString();
             const personaName = this.currentPersona?.name || 'Unknown Persona';
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
             
-            conversationText += `Conversation Export\n`;
-            conversationText += `===================\n`;
-            conversationText += `Date: ${timestamp}\n`;
-            conversationText += `Persona: ${personaName}\n`;
-            conversationText += `Conversation ID: ${conversationId}\n\n`;
-            
-            // Add each message
-            conversationMessages.forEach((message, index) => {
-                conversationText += `${message.sender}:\n`;
-                conversationText += `${message.content}\n\n`;
-            });
-            
-            // Create and download the file
-            const blob = new Blob([conversationText], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            
-            // Create filename with timestamp and persona name
-            const filename = `conversation_${personaName}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
-            
-            // Create download link and click it
-            const downloadLink = document.createElement('a');
-            downloadLink.href = url;
-            downloadLink.download = filename;
-            downloadLink.style.display = 'none';
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-            
-            // Clean up the URL
-            URL.revokeObjectURL(url);
-            
-            console.log(`Conversation saved as: ${filename}`);
+            try {
+                let audioBlob;
+                let filename;
+                
+                if (this.ttsProvider === 'elevenlabs' && firstMessage.conversationAudioUrl) {
+                    // ElevenLabs: Download the conversation audio URL
+                    const response = await fetch(firstMessage.conversationAudioUrl);
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch ElevenLabs audio');
+                    }
+                    audioBlob = await response.blob();
+                    filename = `conversation_${personaName}_${timestamp}.mp3`;
+                    
+                } else if (this.ttsProvider === 'gemini' && firstMessage.audioData) {
+                    // Gemini: Convert base64 WAV data to blob
+                    const audioData = firstMessage.audioData;
+                    const mimeType = firstMessage.audioMimeType || 'audio/wav';
+                    
+                    // Decode base64 to binary
+                    const binaryString = atob(audioData);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    
+                    audioBlob = new Blob([bytes], { type: mimeType });
+                    filename = `conversation_${personaName}_${timestamp}.wav`;
+                    
+                } else {
+                    // No audio available
+                    console.warn('No audio data available for this conversation');
+                    alert('No audio data available for this conversation. Make sure audio generation is enabled.');
+                    return;
+                }
+                
+                // Create and download the audio file
+                const url = URL.createObjectURL(audioBlob);
+                
+                // Create download link and click it
+                const downloadLink = document.createElement('a');
+                downloadLink.href = url;
+                downloadLink.download = filename;
+                downloadLink.style.display = 'none';
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                
+                // Clean up the URL
+                URL.revokeObjectURL(url);
+                
+                console.log(`Conversation audio saved as: ${filename}`);
+                
+            } catch (error) {
+                console.error('Error saving conversation audio:', error);
+                alert('Failed to save conversation audio. Please try again.');
+            }
         }
     };
     
