@@ -61,9 +61,9 @@
                                 <div class="message-sender" x-text="message.sender"></div>
                                 <div class="message-bubble">
                                     <div x-text="message.content"></div>
-                                        <!-- Individual play buttons (only for ElevenLabs - has individual audio files) -->
+                                        <!-- Individual play buttons (only for ElevenLabs TTS mode - has individual audio files) -->
                                         <button 
-                                            x-show="message.audioUrl" 
+                                            x-show="message.audioUrl && (ttsProvider !== 'elevenlabs' || elevenlabsApiMode === 'text-to-speech')" 
                                             @click="playMessageAudio(message, index)" 
                                             class="play-audio-btn" 
                                             :class="{'playing': isAudioPlaying(index)}"
@@ -259,6 +259,20 @@
                                 <option value="eleven_flash_v2">Eleven Flash V2</option>
                                 <option value="eleven_monolingual_v1">Eleven Monolingual V1</option>
                             </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>API Mode</label>
+                            <select x-model="elevenlabsApiMode" @change="saveSettings()">
+                                <option value="text-to-speech">Text-to-Speech (Individual messages)</option>
+                                <option value="dialogue">Dialogue (Single conversation audio)</option>
+                            </select>
+                            <div class="temperature-description" style="margin-top: 0.5rem;">
+                                <small>
+                                    <strong>Text-to-Speech:</strong> Each message gets its own audio file with individual play buttons.<br>
+                                    <strong>Dialogue:</strong> Entire conversation is generated as a single audio file optimized for natural flow.
+                                </small>
+                            </div>
                         </div>
                     </div>
 

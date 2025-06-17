@@ -70,8 +70,104 @@ export class AudioManager {
         }
     }
 
-    // Generate audio for multiple dialogue messages and concatenate into single audio
+    // Generate audio for multiple dialogue messages 
     async generateDialogueAudio(dialogue) {
+        if (!this.app.elevenlabsKey || !dialogue || !Array.isArray(dialogue)) {
+            return null;
+        }
+
+        // Check if using dialogue API mode
+        if (this.app.elevenlabsApiMode === 'dialogue') {
+            return await this.generateDialogueWithDialogueAPI(dialogue);
+        } else {
+            // Use traditional text-to-speech API and concatenate
+            return await this.generateDialogueWithTTSAPI(dialogue);
+        }
+    }
+
+    // Generate dialogue using ElevenLabs Dialogue API (single call)
+    async generateDialogueWithDialogueAPI(dialogue) {
+        if (!this.app.elevenlabsKey || !dialogue || !Array.isArray(dialogue)) {
+            return null;
+        }
+
+        try {
+            // Build inputs array for dialogue API
+            const inputs = dialogue.map(msg => {
+                const voiceId = this.app.currentPersona.voices[msg.speaker];
+                if (!voiceId) {
+                    console.warn(`No voice configured for speaker: ${msg.speaker}`);
+                    return null;
+                }
+                
+                return {
+                    text: msg.text,
+                    voice_id: voiceId
+                };
+            }).filter(input => input !== null);
+
+            if (inputs.length === 0) {
+                console.warn('No valid inputs for dialogue API');
+                return null;
+            }
+
+            const requestData = {
+                inputs: inputs,
+                model_id: this.app.elevenlabsModel,
+                settings: {
+                    stability: 0.5,
+                    similarity_boost: 0.75
+                }
+            };
+
+            if (this.app.debugEnabled) {
+                this.app.logDebug('request', 'elevenlabs-dialogue', this.app.elevenlabsModel, { 
+                    request: requestData 
+                });
+            }
+
+            const response = await fetch('https://api.elevenlabs.io/v1/text-to-dialogue', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'xi-api-key': this.app.elevenlabsKey
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`ElevenLabs Dialogue API error: ${response.status} - ${error}`);
+            }
+
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+
+            if (this.app.debugEnabled) {
+                this.app.logDebug('response', 'elevenlabs-dialogue', this.app.elevenlabsModel, { 
+                    response: { 
+                        status: response.status,
+                        size: audioBlob.size,
+                        type: audioBlob.type,
+                        inputCount: inputs.length
+                    } 
+                });
+            }
+
+            return audioUrl;
+        } catch (error) {
+            console.error('Dialogue API generation error:', error);
+            if (this.app.debugEnabled) {
+                this.app.logDebug('error', 'elevenlabs-dialogue', this.app.elevenlabsModel, { 
+                    error: error.message 
+                });
+            }
+            return null;
+        }
+    }
+
+    // Generate dialogue using traditional TTS API and concatenate (original method)
+    async generateDialogueWithTTSAPI(dialogue) {
         if (!this.app.elevenlabsKey || !dialogue || !Array.isArray(dialogue)) {
             return null;
         }
@@ -126,6 +222,21 @@ export class AudioManager {
             return { individualAudioUrls: [], conversationAudioUrl: null };
         }
 
+        // Check API mode to determine approach
+        if (this.app.elevenlabsApiMode === 'dialogue') {
+            // Dialogue API mode: Generate single conversation audio, no individual audio
+            const conversationAudioUrl = await this.generateDialogueWithDialogueAPI(dialogue);
+            // Return empty individual URLs since dialogue API generates single audio
+            const individualAudioUrls = new Array(dialogue.length).fill(null);
+            return { individualAudioUrls, conversationAudioUrl };
+        } else {
+            // TTS API mode: Generate individual audio for each message
+            return await this.generateDialogueAudioWithIndividualTTS(dialogue);
+        }
+    }
+
+    // Generate individual audio URLs using TTS API (original method)
+    async generateDialogueAudioWithIndividualTTS(dialogue) {
         const audioBlobs = [];
         const individualAudioUrls = [];
         const maxConcurrent = 5;

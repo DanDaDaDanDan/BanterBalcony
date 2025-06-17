@@ -19,6 +19,7 @@ export class SettingsManager {
         localStorage.setItem('deepseek_model', this.app.deepseekModel);
         localStorage.setItem('elevenlabs_api_key', this.app.elevenlabsKey);
         localStorage.setItem('elevenlabs_model', this.app.elevenlabsModel);
+        localStorage.setItem('elevenlabs_api_mode', this.app.elevenlabsApiMode);
         localStorage.setItem('tts_provider', this.app.ttsProvider);
         localStorage.setItem('temperature', this.app.temperature.toString());
         localStorage.setItem('debug_enabled', this.app.debugEnabled.toString());

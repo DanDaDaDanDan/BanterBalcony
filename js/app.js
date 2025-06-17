@@ -40,6 +40,7 @@ window.banterBalconyApp = function() {
         // ElevenLabs settings
         elevenlabsKey: localStorage.getItem('elevenlabs_api_key') || '',
         elevenlabsModel: localStorage.getItem('elevenlabs_model') || 'eleven_multilingual_v2',
+        elevenlabsApiMode: localStorage.getItem('elevenlabs_api_mode') || 'text-to-speech', // 'text-to-speech' or 'dialogue'
         
         // TTS Provider settings (independent of text generation)
         ttsProvider: localStorage.getItem('tts_provider') || 'elevenlabs', // 'elevenlabs' or 'gemini'
