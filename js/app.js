@@ -26,7 +26,7 @@ window.banterBalconyApp = function() {
         
         // Google settings
         googleKey: localStorage.getItem('google_api_key') || '',
-        googleModel: localStorage.getItem('google_model') || 'gemini-2.5-flash-preview-05-20',
+        googleModel: localStorage.getItem('google_model') || 'gemini-2.5-flash',
         geminiVoice: localStorage.getItem('gemini_voice') || 'Kore',
         
         // xAI settings
@@ -39,8 +39,8 @@ window.banterBalconyApp = function() {
         
         // ElevenLabs settings
         elevenlabsKey: localStorage.getItem('elevenlabs_api_key') || '',
-        elevenlabsModel: localStorage.getItem('elevenlabs_model') || 'eleven_multilingual_v2',
-        elevenlabsApiMode: localStorage.getItem('elevenlabs_api_mode') || 'text-to-speech', // 'text-to-speech' or 'dialogue'
+        elevenlabsModel: localStorage.getItem('elevenlabs_model') || 'eleven_v3',
+        elevenlabsApiMode: localStorage.getItem('elevenlabs_api_mode') || 'dialogue', // 'text-to-speech' or 'dialogue'
         
         // TTS Provider settings (independent of text generation)
         ttsProvider: localStorage.getItem('tts_provider') || 'elevenlabs', // 'elevenlabs' or 'gemini'
@@ -464,14 +464,11 @@ window.banterBalconyApp = function() {
 
         // Get the appropriate TTS model based on the selected Google model
         get geminiTTSModel() {
-            // Map regular models to their TTS equivalents
+            // Simple rule: if "flash" is in the name, use flash TTS model, otherwise use pro TTS model
             if (this.googleModel.includes('flash')) {
                 return 'gemini-2.5-flash-preview-tts';
-            } else if (this.googleModel.includes('pro')) {
-                return 'gemini-2.5-pro-preview-tts';
             } else {
-                // Default to flash for unknown models
-                return 'gemini-2.5-flash-preview-tts';
+                return 'gemini-2.5-pro-preview-tts';
             }
         },
 
