@@ -30,6 +30,7 @@ Create engaging dialogue that brings characters to life through their distinct p
 • Match tags to the character's voice and personality  
 • Experiment with combinations and transitions between emotions
 • Layer sound effects with emotional tags: "[mischievously] [chuckles] Perfect..."
+• Don't emit tags not explicitly listed above
 
 ## Response Format
 **Always respond with valid JSON:**

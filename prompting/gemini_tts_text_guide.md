@@ -2,8 +2,6 @@
 
 Create engaging dialogue that brings characters to life through their distinct personalities and natural speech patterns.
 
-*Based on best practices from [Gemini 2.5 Pro TTS research](https://chatgpt.com/s/dr_684b0093f60481919158eefbc32b54c9)*
-
 **Dialogue Principles:**
 • Give each speaker their own voice - unique word choices, rhythm, and personality quirks
 • Use natural conversational flow with interruptions, pauses (...), and emotional reactions
@@ -41,17 +39,13 @@ Since Gemini TTS receives the full dialogue context:
 
 ## KEY PRINCIPLES FOR GEMINI TTS MULTI-SPEAKER PROMPTING
 
-Based on [Gemini TTS research](https://ai.google.dev/gemini-api/docs/speech-generation), Gemini 2.5 TTS excels at multi-character dialogue when following these principles:
-
 1. **Speaker labels** (`Speaker1:` / `Speaker2:`) to assign separate voices and maintain character consistency
 2. **Natural-language cues** – emotion, tone, pace, accent – expressed through plain text and punctuation
 3. **Stage directions in parentheses** for delivery hints and emotional context
 4. **Character consistency** – maintain distinct speaking patterns throughout the dialogue
 5. **Contextual understanding** – Gemini processes the full dialogue context for natural flow
 
-**Important Note**: While Gemini TTS can differentiate speakers, it currently has [limitations with per-speaker voice settings](https://discuss.ai.google.dev/t/gemini-tts-ignores-per-speaker-voice-settings-in-multi-character-prompts/84125). Focus on character differentiation through natural language rather than voice parameter settings.
-
-**Voice Assignment in Templates**: All templates now include `gemini_voices` sections with character-to-voice mappings using the available Gemini voices (Kore, Zephyr, Puck, Charon, Fenrir, Aoede). These serve as specifications for potential future support when Gemini improves multi-speaker voice assignment.
+**Important Note**: Focus on character differentiation through natural language rather than voice parameter settings.
 
 Avoid square-bracket audio tags; instead provide clear, screenplay-style text that conveys character personality.
 
@@ -124,8 +118,6 @@ Return **valid JSON**:
 - [ ] Alternating lines for dynamic pacing  
 - [ ] JSON validated
 
-Follow these principles and Gemini 2.5 Pro/Flash TTS will produce dynamic, two-voice banter with vivid, natural expressiveness.
-
 ## Best Practices for Gemini TTS
 
 1. **Contextual Emotion**: Let the words and situation convey the emotion naturally
@@ -134,19 +126,5 @@ Follow these principles and Gemini 2.5 Pro/Flash TTS will produce dynamic, two-v
 4. **Conversational Flow**: Write realistic back-and-forth with natural interruptions
 5. **Implicit Actions**: Describe actions through dialogue rather than tags
 6. **Full Context**: Remember the AI sees the entire conversation when generating audio
-
-## Examples of Tag-Free Expression
-
-**Instead of:** "[whispers] I can't believe it"
-**Write:** "(whispering) I... (shocked) I can't believe it..."
-
-**Instead of:** "[laughs] That's hilarious [chuckles]"
-**Write:** "(laughs) That's hilarious! (giggling) Oh my goodness..."
-
-**Instead of:** "[sarcastic] Oh great, just what I needed"
-**Write:** "(deadpan) Oh great. (sighs) Just what I needed. (muttering) Perfect."
-
-**Instead of:** "[excited] This is amazing!"
-**Write:** "(gasps) This is AMAZING! (breathless) I can't believe it!"
 
 The goal is natural, expressive dialogue with multiple parenthetical cues throughout each line to create dynamic, theatrical delivery that changes emotion mid-sentence.
