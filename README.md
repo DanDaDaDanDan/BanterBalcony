@@ -2,6 +2,8 @@
 
 An AI-powered dialogue generator that creates engaging conversations between personas with high-quality voice synthesis. 
 
+You can play with it at https://dandadadandan.github.io/BanterBalcony/ or clone the project and run a web server to host it.
+
 ### Getting API Keys
 
 #### AI Text Generation
@@ -9,6 +11,7 @@ An AI-powered dialogue generator that creates engaging conversations between per
 - **Google**: [makersuite.google.com](https://makersuite.google.com) - Create API key in Google AI Studio
 - **xAI**: [console.x.ai](https://console.x.ai) - Get API key from xAI Console
 - **DeepSeek**: [platform.deepseek.com](https://platform.deepseek.com) - Create API key in platform
+- **Anthropic**: not supported as it's a serverless project which is incompatible with the Anthropic API
 
 #### Voice Synthesis
 - **ElevenLabs**: [elevenlabs.io](https://elevenlabs.io) - Sign up and get API key from Profile Settings → API Keys
