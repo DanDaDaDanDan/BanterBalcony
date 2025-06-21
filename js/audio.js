@@ -6,68 +6,15 @@ export class AudioManager {
         this.currentlyPlayingMessageIndex = null;
     }
 
-    // Generate audio for a single message using ElevenLabs API
-    async generateSingleAudio(text, voiceId) {
-        if (!this.app.elevenlabsKey || !voiceId) {
-            return null;
+    // Helper method to remove [tags] from text for ElevenLabs models other than v3
+    filterTextForElevenLabsModel(text) {
+        // Only filter tags for ElevenLabs models that are NOT eleven_v3
+        if (this.app.elevenlabsModel !== 'eleven_v3') {
+            // Remove all [tag] patterns but preserve the text content
+            return text.replace(/\[([^\]]+)\]/g, '');
         }
-        
-        try {
-            const requestData = {
-                text: text,
-                model_id: this.app.elevenlabsModel,
-                voice_settings: {
-                    stability: 0.5,
-                    similarity_boost: 0.75
-                }
-            };
-            
-            if (this.app.debugEnabled) {
-                this.app.logDebug('request', 'elevenlabs', this.app.elevenlabsModel, { 
-                    voice_id: voiceId,
-                    request: requestData 
-                });
-            }
-            
-            const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'xi-api-key': this.app.elevenlabsKey
-                },
-                body: JSON.stringify(requestData)
-            });
-            
-            if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`ElevenLabs API error: ${response.status} - ${error}`);
-            }
-            
-            const audioBlob = await response.blob();
-            const audioUrl = URL.createObjectURL(audioBlob);
-            
-            if (this.app.debugEnabled) {
-                this.app.logDebug('response', 'elevenlabs', this.app.elevenlabsModel, { 
-                    voice_id: voiceId,
-                    response: { 
-                        status: response.status,
-                        size: audioBlob.size,
-                        type: audioBlob.type 
-                    } 
-                });
-            }
-            
-            return audioUrl;
-        } catch (error) {
-            console.error(`Audio generation error for voice ${voiceId}:`, error);
-            if (this.app.debugEnabled) {
-                this.app.logDebug('error', 'elevenlabs', this.app.elevenlabsModel, { 
-                    voice_id: voiceId,
-                    error: error.message 
-                });
-            }
-            return null;
-        }
+        // For eleven_v3, keep the tags
+        return text;
     }
 
     // Generate audio for multiple dialogue messages 
@@ -100,8 +47,11 @@ export class AudioManager {
                     return null;
                 }
                 
+                // Filter tags for non-v3 models
+                const processedText = this.filterTextForElevenLabsModel(msg.text);
+                
                 return {
-                    text: msg.text,
+                    text: processedText,
                     voice_id: voiceId
                 };
             }).filter(input => input !== null);
@@ -292,8 +242,11 @@ export class AudioManager {
         }
         
         try {
+            // Filter tags for non-v3 models
+            const processedText = this.filterTextForElevenLabsModel(text);
+            
             const requestData = {
-                text: text,
+                text: processedText,
                 model_id: this.app.elevenlabsModel,
                 voice_settings: {
                     stability: 0.5,
