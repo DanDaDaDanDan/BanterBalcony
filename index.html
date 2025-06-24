@@ -17,6 +17,7 @@
                 <div class="nav-buttons">
                     <button @click="currentView = 'chat'" :class="{'active': currentView === 'chat'}">Chat</button>
                     <button @click="currentView = 'personas'" :class="{'active': currentView === 'personas'}">Personas</button>
+                    <button @click="currentView = 'voices'" :class="{'active': currentView === 'voices'}">Voices</button>
                     <button @click="currentView = 'settings'" :class="{'active': currentView === 'settings'}">Settings</button>
                     <button @click="currentView = 'debug'" :class="{'active': currentView === 'debug'}">Debug</button>
                 </div>
@@ -146,6 +147,27 @@
                                         <h5 x-text="persona.name"></h5>
                                     </div>
                                     <p x-text="persona.summary"></p>
+                                    
+                                    <!-- Voice Assignments for this Persona -->
+                                    <div class="persona-voice-assignments" x-show="persona.voice_profiles && Object.keys(persona.voice_profiles).length > 0">
+                                        <h6>Voice Assignments</h6>
+                                        <div class="voice-assignments-list">
+                                            <template x-for="[speaker, profileName] in Object.entries(persona.voice_profiles || {})" :key="speaker">
+                                                <div class="voice-assignment-item">
+                                                    <span class="speaker-name" x-text="speaker"></span>
+                                                    <template x-if="profileName">
+                                                        <template x-for="profile in voiceProfileManager.getAllProfiles()" :key="profile.id">
+                                                            <span x-show="profile.id === profileName" class="voice-profile-name" x-text="profile.name"></span>
+                                                        </template>
+                                                    </template>
+                                                    <template x-if="!profileName">
+                                                        <span class="voice-profile-name default">Default voice</span>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    
                                     <div class="persona-actions">
                                         <button @click="selectAndStart(persona)" class="select-start-btn">
                                             <span x-show="showPersonaPrompt">Select & Start</span>
@@ -163,6 +185,132 @@
                 </div>
             </div>
 
+            <!-- Voices View -->
+            <div x-show="currentView === 'voices'" class="voices-view">
+                <div class="voices-container">
+                    <h2>Voice Profiles</h2>
+                    
+                    <div class="voices-content">
+                        <!-- Voice Profile Gallery -->
+                        <div class="voice-profiles-section">
+                            <div class="voices-header">
+                                <h3>Voice Gallery</h3>
+                                <div class="voice-stats">
+                                    <span x-text="voiceProfileManager.getAllProfiles().length + ' profiles available'"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="voice-profiles-grid">
+                                <template x-for="profile in voiceProfileManager.getAllProfiles()" :key="profile.id">
+                                    <div class="voice-profile-card">
+                                        <div class="voice-profile-header">
+                                            <h3 x-text="profile.name"></h3>
+                                        </div>
+                                        
+                                        <p class="voice-description" x-text="profile.description || 'No description available'"></p>
+                                        
+                                        <div class="voice-characteristics">
+                                            <span class="characteristic-badge" x-text="profile.characteristics.gender || 'unspecified'"></span>
+                                            <span class="characteristic-badge" x-text="profile.characteristics.age || 'unspecified'"></span>
+                                            <span class="characteristic-badge" x-text="profile.characteristics.tone || 'neutral'"></span>
+                                            <span class="characteristic-badge energy" x-text="(profile.characteristics.energy || 'medium') + ' energy'"></span>
+                                        </div>
+                                        
+                                        <!-- Provider Mappings - Compact Display -->
+                                        <div class="provider-mappings-compact">
+                                            <h4>TTS Provider Voices</h4>
+                                            
+                                            <!-- ElevenLabs -->
+                                            <div class="provider-mapping-row">
+                                                <span class="provider-label">ElevenLabs:</span>
+                                                <span class="provider-value" x-text="profile.providerMappings?.elevenlabs?.voiceId || 'Default voice'"></span>
+                                            </div>
+                                            
+                                            <!-- Gemini -->
+                                            <div class="provider-mapping-row">
+                                                <span class="provider-label">Gemini:</span>
+                                                <span class="provider-value" x-text="profile.providerMappings?.gemini?.voiceName || 'Default voice'"></span>
+                                            </div>
+                                            
+                                            <!-- fal.ai Models -->
+                                            <div class="provider-mapping-row">
+                                                <span class="provider-label">Orpheus:</span>
+                                                <span class="provider-value" x-text="profile.providerMappings?.['orpheus-tts']?.voice || 'Default voice'"></span>
+                                            </div>
+                                            
+                                            <div class="provider-mapping-row">
+                                                <span class="provider-label">PlayAI v3:</span>
+                                                <span class="provider-value" x-text="profile.providerMappings?.['playai-tts-v3']?.voice || 'Default voice'"></span>
+                                            </div>
+                                            
+                                            <div class="provider-mapping-row">
+                                                <span class="provider-label">DIA:</span>
+                                                <span class="provider-value" x-text="profile.providerMappings?.['dia-tts']?.voice || 'Default voice'"></span>
+                                            </div>
+                                            
+                                            <div class="provider-mapping-row">
+                                                <span class="provider-label">F5:</span>
+                                                <span class="provider-value" x-text="profile.providerMappings?.['f5-tts']?.voice || 'Default voice'"></span>
+                                            </div>
+                                            
+                                            <div class="provider-mapping-row">
+                                                <span class="provider-label">Kokoro:</span>
+                                                <span class="provider-value" x-text="profile.providerMappings?.['kokoro-tts']?.voice || 'Default voice'"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                            
+                            <div x-show="voiceProfileManager.getAllProfiles().length === 0" class="no-voice-profiles">
+                                <div class="empty-state">
+                                    <h4>No Voice Profiles Found</h4>
+                                    <p>Voice profiles help manage consistent voice characteristics across different TTS providers. You can create them programmatically or import from configuration files.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Template Voice Assignments -->
+                    <div class="template-assignments-section" x-show="currentPersona">
+                        <h3>Current Template Voice Assignments</h3>
+                        <p class="section-description">Voice assignments for template: <strong x-text="currentPersona?.name"></strong></p>
+                        
+                        <div class="assignments-grid">
+                            <template x-for="[speaker, voiceId] in Object.entries(currentPersona?.voices || {})" :key="speaker">
+                                <div class="assignment-card">
+                                    <div class="speaker-info">
+                                        <h4 x-text="speaker"></h4>
+                                        <span class="speaker-role">Speaker</span>
+                                    </div>
+                                    <div class="assignment-details">
+                                        <select @change="voiceProfileManager.setTemplateMapping(currentPersona.name, speaker, $event.target.value)" class="voice-selector">
+                                            <option value="">Use default voice</option>
+                                            <template x-for="profile in voiceProfileManager.getAllProfiles()" :key="profile.id">
+                                                <option :value="profile.id" 
+                                                        :selected="voiceProfileManager.getTemplateMapping(currentPersona.name, speaker) === profile.id"
+                                                        x-text="profile.name + ' (' + (profile.characteristics.gender || 'unspecified') + ', ' + (profile.characteristics.age || 'unspecified') + ')'"></option>
+                                            </template>
+                                        </select>
+                                        <div class="current-assignment" x-show="voiceProfileManager.getTemplateMapping(currentPersona.name, speaker)">
+                                            <template x-for="profile in voiceProfileManager.getAllProfiles()" :key="profile.id">
+                                                <div x-show="profile.id === voiceProfileManager.getTemplateMapping(currentPersona.name, speaker)" class="assigned-profile">
+                                                    <span class="profile-name" x-text="profile.name"></span>
+                                                    <div class="profile-badges">
+                                                        <span class="mini-badge" x-text="profile.characteristics.gender || 'unspecified'"></span>
+                                                        <span class="mini-badge" x-text="profile.characteristics.tone || 'neutral'"></span>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Settings View -->
             <div x-show="currentView === 'settings'" class="settings-view">
                 <div class="settings-container">
@@ -170,27 +318,12 @@
                         <p>All data is stored locally in your browser. Nothing is sent to the cloud except API calls to AI providers.</p>
                     </div>
                     
-                    <!-- Provider Selection -->
+                    <!-- API Keys Section -->
                     <div class="settings-group">
-                        <h3>AI Provider</h3>
-                        <div class="form-group">
-                            <label>Select Provider</label>
-                            <select x-model="selectedProvider" @change="saveSettings()">
-                                <option value="openai">OpenAI</option>
-                                <option value="anthropic">Anthropic Claude</option>
-                                <option value="google">Google Gemini</option>
-                                <option value="xai">xAI Grok</option>
-                                <option value="deepseek">DeepSeek</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- OpenAI Configuration -->
-                    <div class="settings-group" x-show="selectedProvider === 'openai'">
-                        <h3>OpenAI Configuration</h3>
+                        <h3>API Keys</h3>
                         <form @submit.prevent="">
                             <div class="form-group">
-                                <label>API Key</label>
+                                <label>OpenAI API Key</label>
                                 <input 
                                     type="password" 
                                     x-model="openaiKey" 
@@ -198,11 +331,99 @@
                                     placeholder="Enter your OpenAI API key"
                                     autocomplete="off"
                                 />
+                                <div class="temperature-description" style="margin-top: 0.5rem;">
+                                    <small>Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" style="color: var(--secondary-color)">OpenAI Platform</a></small>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Google AI API Key</label>
+                                <input 
+                                    type="password" 
+                                    x-model="googleKey" 
+                                    @change="saveSettings()"
+                                    placeholder="Enter your Google AI API key"
+                                    autocomplete="off"
+                                />
+                                <div class="temperature-description" style="margin-top: 0.5rem;">
+                                    <small>Get your API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--secondary-color)">Google AI Studio</a></small>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>xAI API Key</label>
+                                <input 
+                                    type="password" 
+                                    x-model="xaiKey" 
+                                    @change="saveSettings()"
+                                    placeholder="Enter your xAI API key"
+                                    autocomplete="off"
+                                />
+                                <div class="temperature-description" style="margin-top: 0.5rem;">
+                                    <small>Get your API key from <a href="https://console.x.ai" target="_blank" style="color: var(--secondary-color)">xAI Console</a></small>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>DeepSeek API Key</label>
+                                <input 
+                                    type="password" 
+                                    x-model="deepseekKey" 
+                                    @change="saveSettings()"
+                                    placeholder="Enter your DeepSeek API key"
+                                    autocomplete="off"
+                                />
+                                <div class="temperature-description" style="margin-top: 0.5rem;">
+                                    <small>Get your API key from <a href="https://platform.deepseek.com/api_keys" target="_blank" style="color: var(--secondary-color)">DeepSeek Platform</a></small>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>ElevenLabs API Key</label>
+                                <input 
+                                    type="password" 
+                                    x-model="elevenlabsKey" 
+                                    @change="saveSettings()"
+                                    placeholder="Enter your ElevenLabs API key"
+                                    autocomplete="off"
+                                />
+                                <div class="temperature-description" style="margin-top: 0.5rem;">
+                                    <small>Get your API key from <a href="https://elevenlabs.io/api" target="_blank" style="color: var(--secondary-color)">ElevenLabs API</a></small>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>fal.ai API Key</label>
+                                <input 
+                                    type="password" 
+                                    x-model="falKey" 
+                                    @change="saveSettings()"
+                                    placeholder="Enter your fal.ai API key"
+                                    autocomplete="off"
+                                />
+                                <div class="temperature-description" style="margin-top: 0.5rem;">
+                                    <small>Get your API key from <a href="https://fal.ai/dashboard" target="_blank" style="color: var(--secondary-color)">fal.ai dashboard</a></small>
+                                </div>
                             </div>
                         </form>
-                        
+                    </div>
+                    
+                    <!-- Text Generation Settings -->
+                    <div class="settings-group">
+                        <h3>Text Generation</h3>
                         <div class="form-group">
-                            <label>Model</label>
+                            <label>AI Provider</label>
+                            <select x-model="selectedProvider" @change="saveSettings()">
+                                <option value="openai">OpenAI</option>
+                                <option value="google">Google Gemini</option>
+                                <option value="xai">xAI Grok</option>
+                                <option value="deepseek">DeepSeek</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Model Selection for each provider -->
+                        <div class="form-group" x-show="selectedProvider === 'openai'">
+                            <label>OpenAI Model</label>
                             <select x-model="openaiModel" @change="saveSettings()">
                                 <option value="gpt-4o">GPT-4o</option>
                                 <option value="gpt-4o-mini">GPT-4o Mini</option>
@@ -215,31 +436,15 @@
                                 <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
                                 <option value="gpt-4.1-nano">GPT-4.1 Nano</option>
                                 <option value="gpt-4.5-preview">GPT-4.5 Preview</option>
-								<option value="gpt-4-turbo">GPT-4 Turbo</option>
-								<option value="gpt-4">GPT-4</option>
-								<option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                                <option value="gpt-4">GPT-4</option>
+                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
                             </select>
                         </div>
-                    </div>
-
-                    <!-- Google Configuration -->
-                    <div class="settings-group" x-show="selectedProvider === 'google'">
-                        <h3>Google Gemini Configuration</h3>
-                        <form @submit.prevent="">
-                            <div class="form-group">
-                                <label>API Key</label>
-                                <input 
-                                    type="password" 
-                                    x-model="googleKey" 
-                                    @change="saveSettings()"
-                                    placeholder="Enter your Google AI API key"
-                                    autocomplete="off"
-                                />
-                            </div>
-                        </form>
                         
-                        <div class="form-group">
-                            <label>Model</label>
+
+                        <div class="form-group" x-show="selectedProvider === 'google'">
+                            <label>Google Model</label>
                             <select x-model="googleModel" @change="saveSettings()">
                                 <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                                 <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
@@ -249,57 +454,9 @@
                                 <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
                             </select>
                         </div>
-                    </div>
-
-                    <!-- Anthropic Configuration -->
-                    <div class="settings-group" x-show="selectedProvider === 'anthropic'">
-                        <h3>Anthropic Configuration</h3>
-                        <form @submit.prevent="">
-                            <div class="form-group">
-                                <label>API Key</label>
-                                <input 
-                                    type="password" 
-                                    x-model="anthropicKey" 
-                                    @change="saveSettings()"
-                                    placeholder="Enter your Anthropic API key"
-                                    autocomplete="off"
-                                />
-                            </div>
-                        </form>
                         
-                        <div class="form-group">
-                            <label>Model</label>
-                            <select x-model="anthropicModel" @change="saveSettings()">
-                                <option value="claude-opus-4-20250514">Claude Opus 4</option>
-                                <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
-                                <option value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</option>
-								<option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
-								<option value="claude-3-5-haiku">Claude 3.5 Haiku</option>
-								<option value="claude-3-opus">Claude 3 Opus</option>
-								<option value="claude-3-sonnet">Claude 3 Sonnet</option>
-								<option value="claude-3-haiku">Claude 3 Haiku</option>
-							</select>
-                        </div>
-                    </div>
-
-                    <!-- xAI Configuration -->
-                    <div class="settings-group" x-show="selectedProvider === 'xai'">
-                        <h3>xAI Grok Configuration</h3>
-                        <form @submit.prevent="">
-                            <div class="form-group">
-                                <label>API Key</label>
-                                <input 
-                                    type="password" 
-                                    x-model="xaiKey" 
-                                    @change="saveSettings()"
-                                    placeholder="Enter your xAI API key"
-                                    autocomplete="off"
-                                />
-                            </div>
-                        </form>
-                        
-                        <div class="form-group">
-                            <label>Model</label>
+                        <div class="form-group" x-show="selectedProvider === 'xai'">
+                            <label>xAI Model</label>
                             <select x-model="xaiModel" @change="saveSettings()">
                                 <option value="grok-3">Grok 3</option>
                                 <option value="grok-3-mini">Grok 3 Mini</option>
@@ -307,26 +464,9 @@
                                 <option value="grok-3-mini-fast">Grok 3 Mini Fast</option>
                             </select>
                         </div>
-                    </div>
-
-                    <!-- DeepSeek Configuration -->
-                    <div class="settings-group" x-show="selectedProvider === 'deepseek'">
-                        <h3>DeepSeek Configuration</h3>
-                        <form @submit.prevent="">
-                            <div class="form-group">
-                                <label>API Key</label>
-                                <input 
-                                    type="password" 
-                                    x-model="deepseekKey" 
-                                    @change="saveSettings()"
-                                    placeholder="Enter your DeepSeek API key"
-                                    autocomplete="off"
-                                />
-                            </div>
-                        </form>
                         
-                        <div class="form-group">
-                            <label>Model</label>
+                        <div class="form-group" x-show="selectedProvider === 'deepseek'">
+                            <label>DeepSeek Model</label>
                             <select x-model="deepseekModel" @change="saveSettings()">
                                 <option value="deepseek-chat">DeepSeek Chat</option>
                                 <option value="deepseek-reasoner">DeepSeek Reasoner</option>
@@ -335,94 +475,100 @@
                         </div>
                     </div>
 
-                    <!-- TTS Provider Selection -->
+                    <!-- Text-to-Speech Settings -->
                     <div class="settings-group">
-                        <h3>Text-to-Speech Provider</h3>
+                        <h3>Text-to-Speech</h3>
                         <div class="form-group">
-                            <label>Select TTS Provider</label>
+                            <label>TTS Provider</label>
                             <select x-model="ttsProvider" @change="saveSettings()">
                                 <option value="elevenlabs">ElevenLabs</option>
                                 <option value="gemini">Gemini TTS</option>
-                            </select>
-                            <div class="temperature-description" style="margin-top: 0.5rem;">
-                                <small>Choose which service to use for voice synthesis. This is independent of your AI text generation provider.</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ElevenLabs Configuration -->
-                    <div class="settings-group" x-show="ttsProvider === 'elevenlabs'">
-                        <h3>ElevenLabs Configuration</h3>
-                        <form @submit.prevent="">
-                            <div class="form-group">
-                                <label>API Key</label>
-                                <input 
-                                    type="password" 
-                                    x-model="elevenlabsKey" 
-                                    @change="saveSettings()"
-                                    placeholder="Enter your ElevenLabs API key"
-                                    autocomplete="off"
-                                />
-                            </div>
-                        </form>
-                        
-                        <div class="form-group">
-                            <label>Model</label>
-                            <select x-model="elevenlabsModel" @change="saveSettings()">
-                                <option value="eleven_v3">Eleven V3</option>
-                                <option value="eleven_multilingual_v2">Eleven Multilingual V2</option>
-                                <option value="eleven_turbo_v2_5">Eleven Turbo V2.5</option>
-                                <option value="eleven_turbo_v2">Eleven Turbo V2</option>
-                                <option value="eleven_flash_v2_5">Eleven Flash V2.5</option>
-                                <option value="eleven_flash_v2">Eleven Flash V2</option>
-                                <option value="eleven_monolingual_v1">Eleven Monolingual V1</option>
+                                <optgroup label="fal.ai Models">
+                                    <option value="orpheus-tts">Orpheus TTS</option>
+                                    <option value="playai-tts-v3">PlayAI V3</option>
+                                    <option value="playai-tts-dialog">PlayAI Dialog</option>
+                                    <option value="dia-tts">Dia TTS</option>
+                                    <option value="dia-tts-clone">Dia TTS Clone</option>
+                                    <option value="f5-tts">F5-TTS</option>
+                                    <option value="kokoro-tts">Kokoro TTS</option>
+                                    <option value="chatterbox-tts">Chatterbox TTS</option>
+                                </optgroup>
                             </select>
                         </div>
                         
-                        <div class="form-group">
-                            <label>API Mode</label>
-                            <select x-model="elevenlabsApiMode" @change="saveSettings()">
-                                <option value="text-to-speech">Text-to-Speech (Individual messages)</option>
-                                <option value="dialogue">Dialogue (Single conversation audio)</option>
-                            </select>
-                            <div class="temperature-description" style="margin-top: 0.5rem;">
-                                <small>
-                                    <strong>Text-to-Speech:</strong> Each message gets its own audio file with individual play buttons.<br>
-                                    <strong>Dialogue:</strong> Entire conversation is generated as a single audio file optimized for natural flow.
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Gemini TTS Configuration -->
-                    <div class="settings-group" x-show="ttsProvider === 'gemini'">
-                        <h3>Gemini TTS Configuration</h3>
-                        <form @submit.prevent="">
+                        <!-- ElevenLabs specific settings -->
+                        <div x-show="ttsProvider === 'elevenlabs'">
                             <div class="form-group">
-                                <label>API Key</label>
-                                <input 
-                                    type="password" 
-                                    x-model="googleKey" 
-                                    @change="saveSettings()"
-                                    placeholder="Enter your Google AI API key"
-                                    autocomplete="off"
-                                />
+                                <label>ElevenLabs Model</label>
+                                <select x-model="elevenlabsModel" @change="saveSettings()">
+                                    <option value="eleven_v3">Eleven V3</option>
+                                    <option value="eleven_multilingual_v2">Eleven Multilingual V2</option>
+                                    <option value="eleven_turbo_v2_5">Eleven Turbo V2.5</option>
+                                    <option value="eleven_turbo_v2">Eleven Turbo V2</option>
+                                    <option value="eleven_flash_v2_5">Eleven Flash V2.5</option>
+                                    <option value="eleven_flash_v2">Eleven Flash V2</option>
+                                    <option value="eleven_monolingual_v1">Eleven Monolingual V1</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>ElevenLabs API Mode</label>
+                                <select x-model="elevenlabsApiMode" @change="saveSettings()">
+                                    <option value="text-to-speech">Text-to-Speech (Individual messages)</option>
+                                    <option value="dialogue">Dialogue (Single conversation audio)</option>
+                                </select>
                                 <div class="temperature-description" style="margin-top: 0.5rem;">
-                                    <small>Uses the same API key as Google Gemini text generation.</small>
+                                    <small>
+                                        <strong>Text-to-Speech:</strong> Each message gets its own audio file with individual play buttons.<br>
+                                        <strong>Dialogue:</strong> Entire conversation is generated as a single audio file optimized for natural flow.
+                                    </small>
                                 </div>
                             </div>
-                        </form>
+                        </div>
                         
-                        <div class="form-group">
-                            <label>Voice</label>
-                            <select x-model="geminiVoice" @change="saveSettings()">
-                                <option value="Kore">Kore (Default)</option>
-                                <option value="Zephyr">Zephyr</option>
-                                <option value="Puck">Puck</option>
-                                <option value="Charon">Charon</option>
-                                <option value="Fenrir">Fenrir</option>
-                                <option value="Aoede">Aoede</option>
-                            </select>
+                        <!-- Gemini specific settings -->
+                        <div x-show="ttsProvider === 'gemini'">
+                            <div class="form-group">
+                                <label>Gemini Voice</label>
+                                <select x-model="geminiVoice" @change="saveSettings()">
+                                    <option value="Kore">Kore (Default)</option>
+                                    <option value="Zephyr">Zephyr</option>
+                                    <option value="Puck">Puck</option>
+                                    <option value="Charon">Charon</option>
+                                    <option value="Fenrir">Fenrir</option>
+                                    <option value="Aoede">Aoede</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- fal.ai models info -->
+                        <div x-show="ttsProvider && ttsProvider.includes('tts')" class="temperature-description" style="margin-top: 0.5rem;">
+                            <small>
+                                <template x-if="ttsProvider === 'orpheus-tts'">
+                                    <span><strong>Orpheus:</strong> State-of-the-art empathetic speech synthesis</span>
+                                </template>
+                                <template x-if="ttsProvider === 'playai-tts-v3'">
+                                    <span><strong>PlayAI V3:</strong> Advanced voice cloning with emotion support</span>
+                                </template>
+                                <template x-if="ttsProvider === 'playai-tts-dialog'">
+                                    <span><strong>PlayAI Dialog:</strong> Multi-speaker dialogue generation</span>
+                                </template>
+                                <template x-if="ttsProvider === 'dia-tts'">
+                                    <span><strong>Dia TTS:</strong> Natural speech synthesis with realistic nonverbals like laughter, breathing, and emotional expressions</span>
+                                </template>
+                                <template x-if="ttsProvider === 'dia-tts-clone'">
+                                    <span><strong>Dia TTS Clone:</strong> Voice cloning that preserves natural speech patterns including nonverbals and emotions</span>
+                                </template>
+                                <template x-if="ttsProvider === 'f5-tts'">
+                                    <span><strong>F5-TTS:</strong> High-quality voice synthesis and cloning</span>
+                                </template>
+                                <template x-if="ttsProvider === 'kokoro-tts'">
+                                    <span><strong>Kokoro:</strong> American English voice synthesis</span>
+                                </template>
+                                <template x-if="ttsProvider === 'chatterbox-tts'">
+                                    <span><strong>Chatterbox:</strong> Fast and efficient TTS</span>
+                                </template>
+                            </small>
                         </div>
                     </div>
 
@@ -482,13 +628,110 @@
                                     <span class="debug-model" x-text="entry.model"></span>
                                 </div>
                                 <div class="debug-content">
-                                    <div class="debug-section" x-show="entry.request">
+                                    <!-- Request Section for 'request' type entries -->
+                                    <div class="debug-section" x-show="entry.type === 'request'">
                                         <div class="debug-section-header">
                                             <h4>Request</h4>
+                                            <button @click="copyToClipboard(JSON.stringify(entry, null, 2))" class="copy-json-btn" title="Copy JSON to clipboard">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="debug-details">
+                                            <div x-show="entry.url"><strong>URL:</strong> <span x-text="entry.url"></span></div>
+                                            <div x-show="entry.method"><strong>Method:</strong> <span x-text="entry.method"></span></div>
+                                            <div x-show="entry.type && entry.type !== 'request'"><strong>Type:</strong> <span x-text="entry.type"></span></div>
+                                            <div x-show="entry.endpoint"><strong>Endpoint:</strong> <span x-text="entry.endpoint"></span></div>
+                                            <div x-show="entry.voiceId"><strong>Voice ID:</strong> <span x-text="entry.voiceId"></span></div>
+                                            <div x-show="entry.requestId"><strong>Request ID:</strong> <span x-text="entry.requestId"></span></div>
+                                            <div x-show="entry.attempt"><strong>Attempt:</strong> <span x-text="entry.attempt"></span></div>
+                                        </div>
+                                        <div x-show="entry.headers" class="debug-subsection">
+                                            <h5>Headers</h5>
+                                            <pre class="debug-json" x-html="formatDebugJSON(entry.headers)"></pre>
+                                        </div>
+                                        <div x-show="entry.body" class="debug-subsection">
+                                            <h5>Body</h5>
+                                            <pre class="debug-json" x-html="formatDebugJSON(entry.body)"></pre>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Response Section for 'response' type entries -->
+                                    <div class="debug-section" x-show="entry.type === 'response'">
+                                        <div class="debug-section-header">
+                                            <h4>Response</h4>
+                                            <button @click="copyToClipboard(JSON.stringify(entry, null, 2))" class="copy-json-btn" title="Copy JSON to clipboard">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="debug-details">
+                                            <div x-show="entry.url"><strong>URL:</strong> <span x-text="entry.url"></span></div>
+                                            <div x-show="entry.status"><strong>Status:</strong> <span x-text="entry.status + ' ' + entry.statusText" :class="entry.success ? 'debug-success' : 'debug-error'"></span></div>
+                                            <div x-show="entry.duration"><strong>Duration:</strong> <span x-text="entry.duration + 'ms'"></span></div>
+                                            <div x-show="entry.type && entry.type !== 'response'"><strong>Type:</strong> <span x-text="entry.type"></span></div>
+                                            <div x-show="entry.responseSize"><strong>Response Size:</strong> <span x-text="entry.responseSize + ' bytes'"></span></div>
+                                            <div x-show="entry.audioSize"><strong>Audio Size:</strong> <span x-text="entry.audioSize + ' bytes'"></span></div>
+                                            <div x-show="entry.audioType"><strong>Audio Type:</strong> <span x-text="entry.audioType"></span></div>
+                                            <div x-show="entry.voiceId"><strong>Voice ID:</strong> <span x-text="entry.voiceId"></span></div>
+                                            <div x-show="entry.requestId"><strong>Request ID:</strong> <span x-text="entry.requestId"></span></div>
+                                            <div x-show="entry.attempt"><strong>Attempt:</strong> <span x-text="entry.attempt"></span></div>
+                                            <div x-show="entry.inputCount"><strong>Input Count:</strong> <span x-text="entry.inputCount"></span></div>
+                                            <div x-show="entry.speakerCount"><strong>Speaker Count:</strong> <span x-text="entry.speakerCount"></span></div>
+                                            <div x-show="entry.dialogueLength"><strong>Dialogue Length:</strong> <span x-text="entry.dialogueLength"></span></div>
+                                            <div x-show="entry.candidatesCount"><strong>Candidates Count:</strong> <span x-text="entry.candidatesCount"></span></div>
+                                        </div>
+                                        <div x-show="entry.headers" class="debug-subsection">
+                                            <h5>Headers</h5>
+                                            <pre class="debug-json" x-html="formatDebugJSON(entry.headers)"></pre>
+                                        </div>
+                                        <div x-show="entry.data" class="debug-subsection">
+                                            <h5>Data</h5>
+                                            <pre class="debug-json" x-html="formatDebugJSON(entry.data)"></pre>
+                                        </div>
+                                        <div x-show="entry.error" class="debug-subsection">
+                                            <h5>Error</h5>
+                                            <pre class="debug-error" x-html="formatDebugJSON(entry.error)"></pre>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Error Section for 'error' type entries -->
+                                    <div class="debug-section" x-show="entry.type === 'error'">
+                                        <div class="debug-section-header">
+                                            <h4>Error</h4>
+                                            <button @click="copyToClipboard(JSON.stringify(entry, null, 2))" class="copy-json-btn" title="Copy JSON to clipboard">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="debug-details">
+                                            <div x-show="entry.voiceId"><strong>Voice ID:</strong> <span x-text="entry.voiceId"></span></div>
+                                            <div x-show="entry.type && entry.type !== 'error'"><strong>Type:</strong> <span x-text="entry.type"></span></div>
+                                        </div>
+                                        <div class="debug-subsection">
+                                            <h5>Error Message</h5>
+                                            <pre class="debug-error" x-text="entry.error"></pre>
+                                        </div>
+                                        <div x-show="entry.stack" class="debug-subsection">
+                                            <h5>Stack Trace</h5>
+                                            <pre class="debug-error" x-text="entry.stack"></pre>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Legacy support for old format entries -->
+                                    <div class="debug-section" x-show="entry.request">
+                                        <div class="debug-section-header">
+                                            <h4>Request (Legacy)</h4>
                                             <button @click="copyToClipboard(JSON.stringify(entry.request, null, 2))" class="copy-json-btn" title="Copy JSON to clipboard">
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"></path>
                                                 </svg>
                                             </button>
                                         </div>
@@ -496,22 +739,22 @@
                                     </div>
                                     <div class="debug-section" x-show="entry.response">
                                         <div class="debug-section-header">
-                                            <h4>Response</h4>
+                                            <h4>Response (Legacy)</h4>
                                             <button @click="copyToClipboard(JSON.stringify(entry.response, null, 2))" class="copy-json-btn" title="Copy JSON to clipboard">
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"></path>
                                                 </svg>
                                             </button>
                                         </div>
                                         <pre class="debug-json" x-html="formatDebugJSON(entry.response)"></pre>
                                     </div>
-                                    <div class="debug-section" x-show="entry.error">
-                                        <h4>Error</h4>
+                                    <div class="debug-section" x-show="entry.error && !entry.type">
+                                        <h4>Error (Legacy)</h4>
                                         <pre class="debug-error" x-text="entry.error"></pre>
                                     </div>
-                                    <div class="debug-section" x-show="entry.duration">
-                                        <h4>Duration</h4>
+                                    <div class="debug-section" x-show="entry.duration && !entry.type">
+                                        <h4>Duration (Legacy)</h4>
                                         <span class="debug-duration" x-text="entry.duration + 's'"></span>
                                     </div>
                                 </div>

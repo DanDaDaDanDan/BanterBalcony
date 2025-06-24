@@ -5,6 +5,7 @@ import { PersonaManager } from './personas.js';
 import { DebugManager } from './debug.js';
 import { SettingsManager } from './settings.js';
 import { AudioManager } from './audio.js';
+import { VoiceProfileManager } from './voice-profiles.js';
 
 window.banterBalconyApp = function() {
     const app = {
@@ -13,16 +14,16 @@ window.banterBalconyApp = function() {
         processing: false,
         showPersonaPrompt: false,
         
+        // Voice profile state
+        selectedVoiceProfile: null,
+        editingVoiceProfile: false,
+        
         // Provider settings
         selectedProvider: localStorage.getItem('selected_provider') || 'openai',
         
         // OpenAI settings
         openaiKey: localStorage.getItem('openai_api_key') || '',
         openaiModel: localStorage.getItem('openai_model') || 'gpt-4.1-nano',
-        
-        // Anthropic settings
-        anthropicKey: localStorage.getItem('anthropic_api_key') || '',
-        anthropicModel: localStorage.getItem('anthropic_model') || 'claude-sonnet-4-20250514',
         
         // Google settings
         googleKey: localStorage.getItem('google_api_key') || '',
@@ -42,8 +43,13 @@ window.banterBalconyApp = function() {
         elevenlabsModel: localStorage.getItem('elevenlabs_model') || 'eleven_v3',
         elevenlabsApiMode: localStorage.getItem('elevenlabs_api_mode') || 'dialogue', // 'text-to-speech' or 'dialogue'
         
+        // Fal.ai settings
+        falKey: localStorage.getItem('fal_api_key') || '',
+        falModel: localStorage.getItem('fal_model') || 'orpheus-tts',
+        falVoice: localStorage.getItem('fal_voice') || 'default',
+        
         // TTS Provider settings (independent of text generation)
-        ttsProvider: localStorage.getItem('tts_provider') || 'elevenlabs', // 'elevenlabs' or 'gemini'
+        ttsProvider: localStorage.getItem('tts_provider') || 'elevenlabs', // 'elevenlabs', 'gemini', or 'fal'
         
         // Temperature settings
         temperature: parseFloat(localStorage.getItem('temperature') || '0.8'),
@@ -76,7 +82,6 @@ window.banterBalconyApp = function() {
         get apiKey() {
             switch(this.selectedProvider) {
                 case 'openai': return this.openaiKey;
-                case 'anthropic': return this.anthropicKey;
                 case 'google': return this.googleKey;
                 case 'xai': return this.xaiKey;
                 case 'deepseek': return this.deepseekKey;
@@ -88,7 +93,6 @@ window.banterBalconyApp = function() {
         get selectedModel() {
             switch(this.selectedProvider) {
                 case 'openai': return this.openaiModel;
-                case 'anthropic': return this.anthropicModel;
                 case 'google': return this.googleModel;
                 case 'xai': return this.xaiModel;
                 case 'deepseek': return this.deepseekModel;
@@ -116,6 +120,15 @@ window.banterBalconyApp = function() {
         // Prompting guides
         elevenlabsPromptingGuide: '',
         geminiTTSTextGuide: '',
+        orpheusTTSGuide: '',
+        playaiTTSGuide: '',
+        diaTTSGuide: '',
+        f5TTSGuide: '',
+        kokoroTTSGuide: '',
+        chatterboxTTSGuide: '',
+        cartesiaTTSGuide: '',
+        playhtTTSGuide: '',
+        rapidTTSGuide: '',
         
         async init() {
             // Initialize managers with the Alpine.js reactive proxy (this)
@@ -125,6 +138,7 @@ window.banterBalconyApp = function() {
             this.debugManager = new DebugManager(this);
             this.settingsManager = new SettingsManager(this);
             this.audioManager = new AudioManager(this);
+            this.voiceProfileManager = new VoiceProfileManager(this);
             
             // Bind methods to this Alpine instance
             // Chat methods
@@ -266,25 +280,45 @@ window.banterBalconyApp = function() {
         
         async loadPromptingGuide() {
             try {
-                // Load ElevenLabs prompting guide
-                const elevenlabsResponse = await fetch('./prompting/elevenlabs_prompting_guide.md');
-                if (elevenlabsResponse.ok) {
-                    this.elevenlabsPromptingGuide = await elevenlabsResponse.text();
-                    console.log('Successfully loaded ElevenLabs prompting guide.');
-                } else {
-                    console.error('Failed to load ElevenLabs prompting guide.');
-                }
+                // Define all prompting guides to load
+                const guidesToLoad = [
+                    { file: 'elevenlabs.md', property: 'elevenlabsPromptingGuide', name: 'ElevenLabs' },
+                    { file: 'gemini.md', property: 'geminiTTSTextGuide', name: 'Gemini TTS' },
+                    { file: 'orpheus.md', property: 'orpheusTTSGuide', name: 'Orpheus TTS' },
+                    { file: 'playai.md', property: 'playaiTTSGuide', name: 'PlayAI TTS' },
+                    { file: 'dia.md', property: 'diaTTSGuide', name: 'Dia TTS' },
+                    { file: 'f5.md', property: 'f5TTSGuide', name: 'F5-TTS' },
+                    { file: 'kokoro.md', property: 'kokoroTTSGuide', name: 'Kokoro TTS' },
+                    { file: 'chatterbox.md', property: 'chatterboxTTSGuide', name: 'Chatterbox TTS' },
+                    { file: 'cartesia.md', property: 'cartesiaTTSGuide', name: 'Cartesia TTS' },
+                    { file: 'playht.md', property: 'playhtTTSGuide', name: 'PlayHT TTS' },
+                    { file: 'rapidtts.md', property: 'rapidTTSGuide', name: 'RapidTTS' }
+                ];
 
-                // Load Gemini TTS text generation guide
-                const geminiTTSResponse = await fetch('./prompting/gemini_tts_text_guide.md');
-                if (geminiTTSResponse.ok) {
-                    this.geminiTTSTextGuide = await geminiTTSResponse.text();
-                    console.log('Successfully loaded Gemini TTS text guide.');
-                } else {
-                    console.error('Failed to load Gemini TTS text guide.');
+                // Load all guides
+                for (const guide of guidesToLoad) {
+                    try {
+                        const response = await fetch(`./prompting/${guide.file}`);
+                        if (response.ok) {
+                            this[guide.property] = await response.text();
+                            console.log(`Successfully loaded ${guide.name} prompting guide.`);
+                        } else {
+                            console.warn(`${guide.name} prompting guide not found (${response.status}).`);
+                            // Set a basic fallback
+                            this[guide.property] = `Format your response as a natural dialogue between characters. 
+                                                   Each line should be in the format "Speaker: Dialogue text".
+                                                   Keep responses conversational and engaging.`;
+                        }
+                    } catch (error) {
+                        console.error(`Error loading ${guide.name} prompting guide:`, error);
+                        // Set a basic fallback
+                        this[guide.property] = `Format your response as a natural dialogue between characters. 
+                                               Each line should be in the format "Speaker: Dialogue text".
+                                               Keep responses conversational and engaging.`;
+                    }
                 }
             } catch (error) {
-                console.error('Error loading prompting guides:', error);
+                console.error('Error in loadPromptingGuide:', error);
             }
         },
         
@@ -367,6 +401,8 @@ window.banterBalconyApp = function() {
                     name: frontmatter.name,
                     summary: frontmatter.summary,
                     systemPrompt: sections['System Prompt'] || '',
+                    voice_profiles: frontmatter.voice_profiles || {},
+                    // Keep legacy voice mappings for backward compatibility
                     voices: frontmatter.voices || {},
                     gemini_voices: frontmatter.gemini_voices || {}
                 };
@@ -395,8 +431,8 @@ window.banterBalconyApp = function() {
                         const key = trimmed.substring(0, colonIndex).trim();
                         let value = trimmed.substring(colonIndex + 1).trim();
                         
-                        // Handle nested object for voices and gemini_voices
-                        if (key === 'voices' || key === 'gemini_voices') {
+                        // Handle nested object for voices, gemini_voices, and voice_profiles
+                        if (key === 'voices' || key === 'gemini_voices' || key === 'voice_profiles') {
                             result[key] = {};
                             currentKey = key;
                             isInsideObject = true;

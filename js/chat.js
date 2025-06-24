@@ -32,13 +32,37 @@ export class ChatManager {
     
     // Build contextual coaching guidance based on current configuration
     buildCoachingGuidance() {
-        // Use appropriate guide based on TTS provider
-        if (this.app.ttsProvider === 'gemini') {
-            return this.app.geminiTTSTextGuide;
+        // Map TTS providers to their prompting guides
+        const ttsGuides = {
+            'elevenlabs': this.app.elevenlabsPromptingGuide,
+            'gemini': this.app.geminiTTSTextGuide,
+            'orpheus-tts': this.app.orpheusTTSGuide,
+            'playai-tts-v3': this.app.playaiTTSGuide,
+            'playai-tts-dialog': this.app.playaiTTSGuide,
+            'dia-tts': this.app.diaTTSGuide,
+            'dia-tts-clone': this.app.diaTTSGuide,
+            'f5-tts': this.app.f5TTSGuide,
+            'kokoro-tts': this.app.kokoroTTSGuide,
+            'chatterbox-tts': this.app.chatterboxTTSGuide,
+            'asynctts': this.app.cartesiaTTSGuide,
+            'asyncdia': this.app.cartesiaTTSGuide,
+            'cartesia': this.app.cartesiaTTSGuide,
+            'playht': this.app.playhtTTSGuide,
+            'rapidtts': this.app.rapidTTSGuide,
+            'rapiddia': this.app.rapidTTSGuide
+        };
+
+        // Get the appropriate guide for the current TTS provider
+        const guide = ttsGuides[this.app.ttsProvider];
+        
+        if (guide) {
+            return guide;
         }
 
-        // Otherwise, use ElevenLabs guidance
-        return this.app.elevenlabsPromptingGuide;
+        // Fallback to basic dialogue formatting
+        return `Format your response as a natural dialogue between characters. 
+               Each line should be in the format "Speaker: Dialogue text".
+               Keep responses conversational and engaging.`;
     }
 
 
@@ -64,7 +88,10 @@ export class ChatManager {
             // Build contextual coaching guidance
             const coachingGuidance = this.buildCoachingGuidance();
             
-            const systemContent = `${personaPrompt}\n\n${coachingGuidance}`;
+            // Add TTS provider context
+            const ttsContext = `You are generating dialogue that will be converted to speech using ${this.app.ttsProvider} TTS. Follow the guidelines below for optimal audio output.\n\n`;
+            
+            const systemContent = `${personaPrompt}\n\n${ttsContext}${coachingGuidance}`;
             const userContent = userInput;
 
             // Log for debugging
@@ -73,9 +100,6 @@ export class ChatManager {
             
             let response;
             switch(this.app.selectedProvider) {
-                case 'anthropic':
-                    response = await this.app.aiModels.callAnthropicAPI(systemContent, userContent);
-                    break;
                 case 'google':
                     response = await this.app.aiModels.callGoogleAPI(systemContent, userContent);
                     break;
@@ -107,32 +131,26 @@ export class ChatManager {
                     });
                 });
 
-                // Generate audio based on TTS provider
-                if (this.app.ttsProvider === 'gemini') {
-                    // Use Gemini TTS with the full dialogue context
-                    await this.app.audioManager.generateGeminiAudioForDialogue(aiResponse.dialogue);
-                } else {
-                    // Use ElevenLabs TTS - generate both individual and concatenated audio
-                    const { individualAudioUrls, conversationAudioUrl } = await this.app.audioManager.generateDialogueAudioWithIndividual(aiResponse.dialogue);
-                    
-                    // Attach individual audio URLs to messages
-                    if (individualAudioUrls && individualAudioUrls.length > 0) {
-                        individualAudioUrls.forEach((audioUrl, index) => {
-                            if (audioUrl) {
-                                const messageIndex = this.app.messages.length - aiResponse.dialogue.length + index;
-                                if (this.app.messages[messageIndex]) {
-                                    this.app.messages[messageIndex].audioUrl = audioUrl;
-                                }
+                // Generate audio using the unified TTS provider system
+                const { individualAudioUrls, conversationAudioUrl } = await this.app.audioManager.generateDialogueAudioWithIndividual(aiResponse.dialogue);
+                
+                // Attach individual audio URLs to messages (if provider supports individual audio)
+                if (individualAudioUrls && individualAudioUrls.length > 0) {
+                    individualAudioUrls.forEach((audioUrl, index) => {
+                        if (audioUrl) {
+                            const messageIndex = this.app.messages.length - aiResponse.dialogue.length + index;
+                            if (this.app.messages[messageIndex]) {
+                                this.app.messages[messageIndex].audioUrl = audioUrl;
                             }
-                        });
-                    }
-                    
-                    // Store conversation audio on the first message for unified playback
-                    if (conversationAudioUrl) {
-                        const firstMessageIndex = this.app.messages.length - aiResponse.dialogue.length;
-                        if (this.app.messages[firstMessageIndex]) {
-                            this.app.messages[firstMessageIndex].conversationAudioUrl = conversationAudioUrl;
                         }
+                    });
+                }
+                
+                // Store conversation audio on the first message for unified playback
+                if (conversationAudioUrl) {
+                    const firstMessageIndex = this.app.messages.length - aiResponse.dialogue.length;
+                    if (this.app.messages[firstMessageIndex]) {
+                        this.app.messages[firstMessageIndex].conversationAudioUrl = conversationAudioUrl;
                     }
                 }
 

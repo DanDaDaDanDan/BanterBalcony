@@ -1,15 +1,9 @@
 ---
 name: Conspiracy vs Scientist
 summary: A paranoid theorist debates with a rational scientist humorously over scenarios.
-# Voice assignments:
-# Conspiracy Theorist: Callum - hoarse, middle-aged male (Transatlantic) - intense and dramatic
-# Scientist: Brian - deep, middle-aged male (American) - calm and authoritative
-voices:
-  Conspiracy Theorist: N2lVS1w4EtoT3dr4eOWO
-  Scientist: nPczCjzI2devNBz1zQrb
-gemini_voices:
-  Conspiracy Theorist: Puck
-  Scientist: Kore
+voice_profiles:
+  Conspiracy Theorist: character_male_eccentric
+  Scientist: mature_female_professional
 ---
 
 # System Prompt

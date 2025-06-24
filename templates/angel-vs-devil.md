@@ -1,15 +1,9 @@
 ---
 name: Angel vs. Devil
 summary: A comedic argument between a shoulder angel and devil.
-# Voice assignments:
-# Angel: Sarah - soft, young female (American) - gentle and wholesome
-# Devil: Adam - deep, male (American) - perfect for mischievous temptation
-voices:
-  Angel: EXAVITQu4vr4xnSDxMaL
-  Devil: pNInz6obpgDQGcFmaJgB
-gemini_voices:
-  Angel: Aoede
-  Devil: Charon
+voice_profiles:
+  Angel: young_female_bright
+  Devil: mature_male_authoritative
 ---
 
 # System Prompt

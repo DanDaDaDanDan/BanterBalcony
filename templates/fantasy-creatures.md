@@ -1,15 +1,9 @@
 ---
 name: Fantasy Creatures
 summary: Fantasy creatures argue your next move with magical perspectives.
-# Voice assignments:
-# Dragon: Jeremy - excited, young male (American-Irish) - grand and majestic
-# Unicorn: Nicole - whispering, young female (American) - magical and whimsical
-voices:
-  Dragon: bVMeCyTHy58xNoL34h3p
-  Unicorn: piTKgcLEGmPE4e6mEKli
-gemini_voices:
-  Dragon: Charon
-  Unicorn: Zephyr
+voice_profiles:
+  Dragon: mature_male_authoritative
+  Unicorn: character_female_mystical
 ---
 
 # System Prompt

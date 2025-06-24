@@ -8,8 +8,6 @@ export class SettingsManager {
         localStorage.setItem('selected_provider', this.app.selectedProvider);
         localStorage.setItem('openai_api_key', this.app.openaiKey);
         localStorage.setItem('openai_model', this.app.openaiModel);
-        localStorage.setItem('anthropic_api_key', this.app.anthropicKey);
-        localStorage.setItem('anthropic_model', this.app.anthropicModel);
         localStorage.setItem('google_api_key', this.app.googleKey);
         localStorage.setItem('google_model', this.app.googleModel);
         localStorage.setItem('gemini_voice', this.app.geminiVoice);
@@ -20,6 +18,9 @@ export class SettingsManager {
         localStorage.setItem('elevenlabs_api_key', this.app.elevenlabsKey);
         localStorage.setItem('elevenlabs_model', this.app.elevenlabsModel);
         localStorage.setItem('elevenlabs_api_mode', this.app.elevenlabsApiMode);
+        localStorage.setItem('fal_api_key', this.app.falKey);
+        localStorage.setItem('fal_model', this.app.falModel);
+        localStorage.setItem('fal_voice', this.app.falVoice);
         localStorage.setItem('tts_provider', this.app.ttsProvider);
         localStorage.setItem('temperature', this.app.temperature.toString());
         localStorage.setItem('debug_enabled', this.app.debugEnabled.toString());

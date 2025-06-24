@@ -1,15 +1,9 @@
 ---
 name: Cooking Showdown
 summary: Two chefs passionately advocate life choices using cooking metaphors.
-# Voice assignments:
-# Chef Gourmet: Harry - anxious, young male (American) - meticulous and refined
-# Chef Street Food: James - calm, old male (Australian) - bold and spontaneous
-voices:
-  Chef Gourmet: SOYHLrjzK2X1ezoPC6cr
-  Chef Street Food: ZQe5CZNOzWyzPSCn5a3c
-gemini_voices:
-  Chef Gourmet: Aoede
-  Chef Street Food: Fenrir
+voice_profiles:
+  Chef Gourmet: mature_male_authoritative
+  Chef Street Food: character_male_eccentric
 ---
 
 # System Prompt

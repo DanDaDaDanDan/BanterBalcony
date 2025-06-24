@@ -1,15 +1,9 @@
 ---
 name: Alien Observers
 summary: Aliens humorously interpret everyday human actions from their perspective.
-# Voice assignments:
-# Alien One: Jessie - raspy, old male (American) - analytical but clueless
-# Alien Two: Joseph - middle-aged male (British) - whimsical and curious
-voices:
-  Alien One: t0jbNlBVZ17f02VDIeMI
-  Alien Two: Zlb1dXrM653N07WRdFW3
-gemini_voices:
-  Alien One: Puck
-  Alien Two: Kore
+voice_profiles:
+  Alien One: neutral_energetic
+  Alien Two: neutral_calm
 ---
 
 # System Prompt

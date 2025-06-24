@@ -90,27 +90,6 @@ export class AIModels {
         );
     }
     
-    async callAnthropicAPI(systemPrompt, userPrompt) {
-        const body = {
-            model: this.app.anthropicModel,
-            system: systemPrompt,
-            messages: [{ role: 'user', content: userPrompt }],
-            temperature: this.app.effectiveTemperature
-        };
-        
-        return this.makeAPICall(
-            'anthropic',
-            'https://api.anthropic.com/v1/messages',
-            {
-                'Content-Type': 'application/json',
-                'x-api-key': this.app.anthropicKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body,
-            (data) => JSON.parse(data.content[0].text)
-        );
-    }
-    
     async callGoogleAPI(systemPrompt, userPrompt) {
         const body = {
             contents: [
