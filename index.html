@@ -19,6 +19,7 @@
                     <button @click="currentView = 'personas'" :class="{'active': currentView === 'personas'}">Personas</button>
                     <button @click="currentView = 'voices'" :class="{'active': currentView === 'voices'}">Voices</button>
                     <button @click="currentView = 'settings'" :class="{'active': currentView === 'settings'}">Settings</button>
+                    <button @click="currentView = 'logs'" :class="{'active': currentView === 'logs'}">Logs</button>
                     <button @click="currentView = 'debug'" :class="{'active': currentView === 'debug'}">Debug</button>
                 </div>
             </div>
@@ -604,8 +605,8 @@
                 </div>
             </div>
 
-            <!-- Debug View -->
-            <div x-show="currentView === 'debug'" class="debug-view">
+            <!-- Logs View -->
+            <div x-show="currentView === 'logs'" class="logs-view">
                 <div class="debug-container">
                     <div class="debug-controls">
                         <label class="debug-toggle">
@@ -672,7 +673,7 @@
                                         <div class="debug-details">
                                             <div x-show="entry.url"><strong>URL:</strong> <span x-text="entry.url"></span></div>
                                             <div x-show="entry.status"><strong>Status:</strong> <span x-text="entry.status + ' ' + entry.statusText" :class="entry.success ? 'debug-success' : 'debug-error'"></span></div>
-                                            <div x-show="entry.duration"><strong>Duration:</strong> <span x-text="entry.duration + 'ms'"></span></div>
+                                            <div x-show="entry.duration"><strong>Duration:</strong> <span x-text="entry.duration"></span></div>
                                             <div x-show="entry.type && entry.type !== 'response'"><strong>Type:</strong> <span x-text="entry.type"></span></div>
                                             <div x-show="entry.responseSize"><strong>Response Size:</strong> <span x-text="entry.responseSize + ' bytes'"></span></div>
                                             <div x-show="entry.audioSize"><strong>Audio Size:</strong> <span x-text="entry.audioSize + ' bytes'"></span></div>
@@ -763,6 +764,186 @@
                         <div x-show="debugLog.length === 0" class="debug-empty">
                             No debug entries yet. Enable debug logging and make some API calls to see them here.
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Debug View -->
+            <div x-show="currentView === 'debug'" class="debug-voice-test-view">
+                <!-- Hidden element to force Alpine reactivity -->
+                <div style="display: none" x-text="debugUpdateCounter"></div>
+                
+                <div class="debug-voice-container">
+                    <h2>Voice Model Testing</h2>
+                    <p class="debug-description">Enter a prompt to generate dialogue using each TTS model's specific prompting guide. Compare how different models interpret and generate content.</p>
+                    
+                    <!-- Input Section -->
+                    <div class="debug-input-section">
+                        <textarea 
+                            x-model="debugInput"
+                            @keydown="handleDebugInputKeydown($event)"
+                            placeholder="Enter a prompt (e.g., 'Tell me about the weather') to generate dialogue for each TTS model..."
+                            class="debug-input-textarea"
+                            rows="3"
+                        ></textarea>
+                        <button 
+                            @click="startDebugSession()" 
+                            :disabled="!debugInput.trim() || debugSession?.status === 'processing'"
+                            class="debug-start-button"
+                            :class="{'processing': debugSession?.status === 'processing'}"
+                        >
+                            <span x-show="!debugSession || debugSession.status !== 'processing'">Generate All Models</span>
+                            <span x-show="debugSession?.status === 'processing'">Processing...</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Model Selection Section -->
+                    <div class="debug-model-selection">
+                        <div class="selection-header">
+                            <h3>Voice Models to Test</h3>
+                            <button @click="toggleAllVoiceModels()" class="select-all-btn">
+                                <span x-text="selectedVoiceModels.size === availableVoiceModels.length ? 'Deselect All' : 'Select All'"></span>
+                            </button>
+                        </div>
+                        <div class="selection-info">
+                            <span x-text="getSelectedModelCount()"></span> of <span x-text="availableVoiceModels.length"></span> models selected
+                        </div>
+                        <div class="model-selection-grid">
+                            <template x-for="model in availableVoiceModels" :key="model.modelId">
+                                <label class="model-checkbox-label">
+                                    <input 
+                                        type="checkbox" 
+                                        :checked="selectedVoiceModels.has(model.modelId)"
+                                        @change="toggleVoiceModel(model.modelId)"
+                                        class="model-checkbox"
+                                    />
+                                    <span class="model-checkbox-text" x-text="model.modelName"></span>
+                                </label>
+                            </template>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Overview -->
+                    <div x-show="debugSession" class="debug-progress-overview">
+                        <div class="progress-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Total Models:</span>
+                                <span class="stat-value" x-text="debugSession?.models.length || 0"></span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Completed:</span>
+                                <span class="stat-value" x-text="debugSession?.models.filter(m => m.status === 'completed').length || 0"></span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Failed:</span>
+                                <span class="stat-value error" x-text="debugSession?.models.filter(m => m.status === 'failed').length || 0"></span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Duration:</span>
+                                <span class="stat-value" x-text="formatDebugDuration(debugSession)"></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Overall Progress Bar -->
+                        <div class="overall-progress-bar">
+                            <div 
+                                class="progress-fill" 
+                                :style="`width: ${calculateOverallProgress(debugSession)}%`"
+                            ></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Models Grid -->
+                    <div x-show="debugSession" class="debug-models-grid">
+                        <template x-for="model in debugSession?.models || []" :key="model.modelId">
+                            <div class="debug-model-card" :class="{
+                                'pending': model.status === 'pending',
+                                'processing': model.status === 'generating_text' || model.status === 'text_completed' || model.status === 'generating_audio',
+                                'completed': model.status === 'completed',
+                                'failed': model.status === 'failed'
+                            }">
+                                <!-- Model Header -->
+                                <div class="model-header">
+                                    <h4 class="model-name" x-text="model.modelName"></h4>
+                                    <div class="model-status">
+                                        <span class="status-badge" :class="model.status" x-text="formatModelStatus(model.status)"></span>
+                                        <span x-show="model.retryCount > 0" class="retry-badge" x-text="`Retry ${model.retryCount}`"></span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Progress Bar -->
+                                <div class="model-progress-bar">
+                                    <div class="progress-fill" :style="`width: ${model.progress}%`"></div>
+                                </div>
+                                
+                                <!-- Model Details -->
+                                <div class="model-details">
+                                    <div x-show="model.error" class="model-error">
+                                        <strong>Error:</strong> <span x-text="model.error"></span>
+                                    </div>
+                                    
+                                    <div x-show="model.timings.textEnd" class="timing-info">
+                                        <span>Text: <strong x-text="formatTiming(model.timings.textStart, model.timings.textEnd)"></strong></span>
+                                        <span x-show="model.timings.audioEnd">Audio: <strong x-text="formatTiming(model.timings.audioStart, model.timings.audioEnd)"></strong></span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Action Buttons -->
+                                <div x-show="model.status === 'completed'" class="model-actions">
+                                    <button 
+                                        @click="playDebugAudio(model.modelId)"
+                                        class="action-btn play-btn"
+                                        :class="{'playing': isDebugAudioPlaying(model.modelId)}"
+                                    >
+                                        <span x-show="!isDebugAudioPlaying(model.modelId)">▶ Play</span>
+                                        <span x-show="isDebugAudioPlaying(model.modelId)">⏸ Pause</span>
+                                    </button>
+                                    <button 
+                                        @click="model.showDetails = !model.showDetails"
+                                        class="action-btn inspect-btn"
+                                    >
+                                        <span x-show="!model.showDetails">🔍 Inspect</span>
+                                        <span x-show="model.showDetails">✕ Close</span>
+                                    </button>
+                                </div>
+                                
+                                <!-- Expandable Details -->
+                                <div x-show="model.showDetails" class="model-expanded-details" x-transition>
+                                    <div class="detail-section">
+                                        <h5>Generated Dialogue</h5>
+                                        <div class="dialogue-preview">
+                                            <template x-for="(line, idx) in model.textGeneration || []" :key="idx">
+                                                <div class="dialogue-line">
+                                                    <strong x-text="line.speaker + ':'"></strong>
+                                                    <span x-text="line.text"></span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="detail-section">
+                                        <h5>Prompt Used</h5>
+                                        <div class="prompt-content">
+                                            <div class="prompt-system">
+                                                <strong>System:</strong>
+                                                <pre x-text="model.prompt?.system?.substring(0, 300) + '...'"></pre>
+                                            </div>
+                                            <div class="prompt-user">
+                                                <strong>User:</strong>
+                                                <pre x-text="model.prompt?.user"></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    
+                    <!-- Export Button -->
+                    <div x-show="debugSession?.status === 'completed'" class="debug-export-section">
+                        <button @click="exportDebugSession()" class="export-btn">
+                            📥 Export Session Data
+                        </button>
                     </div>
                 </div>
             </div>

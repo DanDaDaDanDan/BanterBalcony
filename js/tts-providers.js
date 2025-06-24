@@ -291,14 +291,19 @@ export class ElevenLabsProvider extends BaseTTSProvider {
             return { individualAudioUrls: [], conversationAudioUrl: null };
         }
 
-        // Check if using dialogue API mode
-        if (this.app.elevenlabsApiMode === 'dialogue') {
-            // Use dialogue API
+        // Check if using dialogue API mode AND if the model supports it
+        const supportsDialogueAPI = this.getCurrentModel() === 'eleven_v3';
+        
+        if (this.app.elevenlabsApiMode === 'dialogue' && supportsDialogueAPI) {
+            // Use dialogue API (only for eleven_v3)
             const conversationAudioUrl = await this.generateDialogueWithAPI(dialogue);
             const individualAudioUrls = new Array(dialogue.length).fill(null);
             return { individualAudioUrls, conversationAudioUrl };
         } else {
-            // Use individual TTS
+            // Use individual TTS for other models or when dialogue mode is off
+            if (this.app.elevenlabsApiMode === 'dialogue' && !supportsDialogueAPI) {
+                console.warn(`Dialogue API is only supported by eleven_v3 model. Current model: ${this.getCurrentModel()}. Falling back to individual TTS.`);
+            }
             return this.generateIndividualAudios(dialogue);
         }
     }
@@ -343,13 +348,9 @@ export class ElevenLabsProvider extends BaseTTSProvider {
             this.logDebug('request', {
                 url: url,
                 method: 'POST',
-                headers: {
-                    'Content-Type': headers['Content-Type'],
-                    'xi-api-key': '[REDACTED]'
-                },
+                headers: headers,
                 body: requestData,
                 inputCount: inputs.length,
-                type: 'dialogue_api',
                 model: this.getCurrentModel(),
                 provider: this.providerName
             });
@@ -372,7 +373,6 @@ export class ElevenLabsProvider extends BaseTTSProvider {
                     duration: requestDuration,
                     success: false,
                     inputCount: inputs.length,
-                    type: 'dialogue_api',
                     model: this.getCurrentModel(),
                     provider: this.providerName,
                     error: { message: `ElevenLabs Dialogue API error: ${response.status} - ${error}`, raw_response: error }
@@ -393,7 +393,6 @@ export class ElevenLabsProvider extends BaseTTSProvider {
                 inputCount: inputs.length,
                 audioSize: audioBlob.size,
                 audioType: audioBlob.type,
-                type: 'dialogue_api',
                 model: this.getCurrentModel(),
                 provider: this.providerName
             });
@@ -403,7 +402,6 @@ export class ElevenLabsProvider extends BaseTTSProvider {
             console.error('Dialogue API generation error:', error);
             this.logDebug('error', { 
                 error: error.message,
-                type: 'dialogue_api',
                 model: this.getCurrentModel(),
                 provider: this.providerName 
             });
@@ -519,7 +517,6 @@ export class GeminiProvider extends BaseTTSProvider {
                 body: requestBody,
                 speakerCount: speakerNames.length,
                 dialogueLength: dialogue.length,
-                type: 'multi_speaker_dialogue',
                 model: this.getCurrentModel(),
                 provider: this.providerName
             });
@@ -543,7 +540,6 @@ export class GeminiProvider extends BaseTTSProvider {
                     success: false,
                     speakerCount: speakerNames.length,
                     dialogueLength: dialogue.length,
-                    type: 'multi_speaker_dialogue',
                     model: this.getCurrentModel(),
                     provider: this.providerName,
                     error: { message: `Gemini TTS API error: ${response.status} - ${errorText}`, raw_response: errorText }
@@ -563,7 +559,6 @@ export class GeminiProvider extends BaseTTSProvider {
                 speakerCount: speakerNames.length,
                 dialogueLength: dialogue.length,
                 candidatesCount: data.candidates?.length || 0,
-                type: 'multi_speaker_dialogue',
                 model: this.getCurrentModel(),
                 provider: this.providerName,
                 data: data
@@ -600,7 +595,6 @@ export class GeminiProvider extends BaseTTSProvider {
             console.error('Gemini TTS error:', error);
             this.logDebug('error', { 
                 error: error.message,
-                type: 'multi_speaker_dialogue',
                 model: this.getCurrentModel(),
                 provider: this.providerName 
             });
@@ -1129,42 +1123,47 @@ export class FalProvider extends BaseTTSProvider {
     buildRequestData(text, voiceConfig, modelConfig) {
         const model = this.getCurrentModel();
         
-        // Base request - the direct API expects input to be the top-level object
-        let request = {
-            text: text
-        };
+        // Base request - different models use different field names
+        let request = {};
         
         // Model-specific configurations
         switch (model) {
-            case 'f5-tts':
-                request.gen_text = text;
-                request.model_type = 'F5-TTS';
-                request.remove_silence = true;
-                if (voiceConfig?.referenceAudio) {
-                    request.ref_audio_url = voiceConfig.referenceAudio;
-                    request.ref_text = voiceConfig.referenceText || '';
-                }
-                break;
-                
-            case 'dia-tts-clone':
-                if (voiceConfig?.referenceAudio) {
-                    request.reference_audio_url = voiceConfig.referenceAudio;
-                    request.reference_text = voiceConfig.referenceText || text;
+            case 'playai-tts-dialog':
+                // PlayAI Dialog uses 'input' field
+                request.input = text;
+                if (voiceConfig?.voice || this.app.falVoice) {
+                    request.voice = voiceConfig?.voice || this.app.falVoice || 'default';
                 }
                 break;
                 
             case 'playai-tts-v3':
-            case 'playai-tts-dialog':
-                if (voiceConfig?.voice) {
-                    request.voice = voiceConfig.voice;
-                }
+                // PlayAI V3 uses 'input' and requires 'voice'
+                request.input = text;
+                request.voice = voiceConfig?.voice || this.app.falVoice || 'default';
                 if (voiceConfig?.emotion) {
                     request.emotion = voiceConfig.emotion;
                 }
                 break;
                 
+            case 'f5-tts':
+                request.gen_text = text;
+                request.model_type = 'F5-TTS';
+                request.remove_silence = true;
+                // F5-TTS requires reference audio - provide defaults if not configured
+                request.ref_audio_url = voiceConfig?.referenceAudio || 'https://github.com/SWivid/F5-TTS/raw/main/tests/ref_audio/test_en_1_ref_short.wav';
+                request.ref_text = voiceConfig?.referenceText || 'Some call me nature, others call me mother nature.';
+                break;
+                
+            case 'dia-tts-clone':
+                request.text = text;
+                // DIA Clone requires reference audio - provide defaults if not configured
+                request.reference_audio_url = voiceConfig?.referenceAudio || 'https://github.com/SWivid/F5-TTS/raw/main/tests/ref_audio/test_en_1_ref_short.wav';
+                request.reference_text = voiceConfig?.referenceText || 'Some call me nature, others call me mother nature.';
+                break;
+                
             default:
-                // Standard text field for most models
+                // Standard text field for other models (orpheus, dia-tts, kokoro, chatterbox)
+                request.text = text;
                 break;
         }
         

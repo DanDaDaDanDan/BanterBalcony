@@ -2,7 +2,7 @@
 import { AIModels } from './models.js';
 import { ChatManager } from './chat.js';
 import { PersonaManager } from './personas.js';
-import { DebugManager } from './debug.js';
+import { VoiceTestManager } from './voice-test.js';
 import { SettingsManager } from './settings.js';
 import { AudioManager } from './audio.js';
 import { VoiceProfileManager } from './voice-profiles.js';
@@ -13,6 +13,13 @@ window.banterBalconyApp = function() {
                     currentView: 'chat',
         processing: false,
         showPersonaPrompt: false,
+        
+        // Debug state
+        debugInput: '',
+        debugSession: null,
+        debugUpdateCounter: 0,
+        availableVoiceModels: [],
+        selectedVoiceModels: new Set(),
         
         // Voice profile state
         selectedVoiceProfile: null,
@@ -135,7 +142,7 @@ window.banterBalconyApp = function() {
             this.aiModels = new AIModels(this);
             this.chatManager = new ChatManager(this);
             this.personaManager = new PersonaManager(this);
-            this.debugManager = new DebugManager(this);
+            this.voiceTestManager = new VoiceTestManager(this);
             this.settingsManager = new SettingsManager(this);
             this.audioManager = new AudioManager(this);
             this.voiceProfileManager = new VoiceProfileManager(this);
@@ -207,9 +214,346 @@ window.banterBalconyApp = function() {
                 );
             };
             
-            // Debug methods
-            this.logDebug = (type, provider, model, data) => this.debugManager.logDebug(type, provider, model, data);
-            this.formatDebugJSON = (obj) => this.debugManager.formatDebugJSON(obj);
+            // Debug methods - Logs
+            this.logDebug = (type, providerOrData, model, data) => {
+                if (!this.debugEnabled) return;
+                
+                let finalData, provider, finalModel;
+                
+                // Check if this is the new format (type, data) or old format (type, provider, model, data)
+                if (typeof providerOrData === 'object' && model === undefined && data === undefined) {
+                    // New format: (type, data)
+                    finalData = { ...providerOrData };
+                    provider = finalData.provider || 'unknown';
+                    finalModel = finalData.model || 'unknown';
+                } else {
+                    // Old format: (type, provider, model, data)
+                    provider = providerOrData;
+                    finalModel = model;
+                    finalData = { ...data };
+                }
+                
+                // Convert duration from milliseconds to seconds if it exists
+                if (finalData.duration !== undefined) {
+                    finalData.duration = (finalData.duration / 1000).toFixed(1);
+                }
+                
+                const entry = {
+                    timestamp: this.formatTimestamp(new Date()),
+                    type: type, // 'request', 'response', 'error'
+                    provider: provider,
+                    model: finalModel,
+                    ...finalData
+                };
+                
+                this.debugLog.unshift(entry); // Add to beginning for newest first
+                
+                // Keep only last 100 entries to prevent memory issues
+                if (this.debugLog.length > 100) {
+                    this.debugLog = this.debugLog.slice(0, 100);
+                }
+            };
+            
+            this.formatDebugJSON = (obj) => {
+                // Handle null/undefined values
+                if (obj === null || obj === undefined) {
+                    return '';
+                }
+                
+                try {
+                    // Create a safe copy that handles circular references and limits depth
+                    const safeObj = this.createSafeDebugObject(obj, 0, 10); // Max depth of 10
+                    
+                    if (!this.debugPrettyMode) {
+                        // Raw mode - compact JSON string, single line
+                        return JSON.stringify(safeObj);
+                    }
+            
+                    // Pretty mode with syntax highlighting
+                    let jsonStr = JSON.stringify(safeObj, null, 2);
+                    
+                    // In pretty mode, replace escaped newlines with actual newlines for better readability
+                    // But keep escaped quotes as-is to maintain valid JSON structure
+                    jsonStr = jsonStr.replace(/\\n/g, '\n');
+                    
+                    // Replace literal \t with actual tabs for better formatting
+                    jsonStr = jsonStr.replace(/\\t/g, '\t');
+                    
+                    // Apply syntax highlighting
+                    return this.syntaxHighlightJSON(jsonStr);
+                } catch (error) {
+                    // If all else fails, return a safe error message
+                    return `<span class="json-error">Error formatting JSON: ${error.message}</span>`;
+                }
+            };
+            
+            // Helper methods for debug logging
+            this.formatTimestamp = (date) => {
+                return date.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false,
+                    timeZoneName: 'short'
+                });
+            };
+            
+            this.createSafeDebugObject = (obj, currentDepth = 0, maxDepth = 10, seen = new WeakSet()) => {
+                // Prevent infinite recursion
+                if (currentDepth >= maxDepth) {
+                    return '[Max depth reached]';
+                }
+            
+                // Handle primitive types
+                if (obj === null || typeof obj !== 'object') {
+                    return obj;
+                }
+                
+                // Handle circular references
+                if (seen.has(obj)) {
+                    return '[Circular Reference]';
+                }
+                
+                // Mark this object as seen
+                seen.add(obj);
+                
+                try {
+                    if (Array.isArray(obj)) {
+                        return obj.map(item => this.createSafeDebugObject(item, currentDepth + 1, maxDepth, seen));
+                    } else {
+                        const result = {};
+                        for (const [key, value] of Object.entries(obj)) {
+                            // Skip functions and undefined values
+                            if (typeof value === 'function' || value === undefined) {
+                                continue;
+                            }
+                            
+                            // Replace base64 audio data with placeholder
+                            if (typeof value === 'string' && this.isBase64AudioData(value)) {
+                                result[key] = `[Base64 Audio Data: ${Math.round(value.length / 1024)}KB]`;
+                                continue;
+                            }
+                            
+                            result[key] = this.createSafeDebugObject(value, currentDepth + 1, maxDepth, seen);
+                        }
+                        return result;
+                    }
+                } catch (error) {
+                    return `[Error processing object: ${error.message}]`;
+                } finally {
+                    // Remove from seen set when done (for this branch)
+                    seen.delete(obj);
+                }
+            };
+            
+            this.syntaxHighlightJSON = (json) => {
+                // Escape HTML characters first
+                json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                
+                // Apply syntax highlighting with HTML spans
+                return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                    let cls = 'json-number';
+                    if (/^"/.test(match)) {
+                        if (/:$/.test(match)) {
+                            cls = 'json-key';
+                        } else {
+                            cls = 'json-string';
+                        }
+                    } else if (/true|false/.test(match)) {
+                        cls = 'json-boolean';
+                    } else if (/null/.test(match)) {
+                        cls = 'json-null';
+                    }
+                    return '<span class="' + cls + '">' + match + '</span>';
+                });
+            };
+            
+            this.isBase64AudioData = (str) => {
+                // Check if it's a long base64 string (likely audio if > 10KB when decoded)
+                if (str.length < 1000) return false;
+                
+                // Check if it looks like base64 (only contains base64 characters)
+                const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+                if (!base64Regex.test(str)) return false;
+                
+                // Additional heuristics: very long strings are likely audio/binary data
+                return str.length > 10000; // Roughly 7.5KB of decoded data
+            };
+            
+            // Debug methods - Voice Testing
+            this.startDebugSession = async () => {
+                if (!this.debugInput.trim()) return;
+                
+                // Check if we have a persona selected
+                if (!this.currentPersona) {
+                    alert('Please select a persona first from the Personas tab');
+                    return;
+                }
+                
+                // Get selected models from checkboxes
+                const selectedModels = Array.from(this.selectedVoiceModels);
+                if (selectedModels.length === 0) {
+                    alert('Please select at least one voice model to test');
+                    return;
+                }
+                
+                // Update the reactive debugSession to trigger UI updates
+                this.debugSession = this.voiceTestManager.getCurrentSession();
+                
+                // Create and start the debug session with selected models
+                await this.voiceTestManager.createDebugSession(this.debugInput.trim(), selectedModels);
+                
+                // Keep updating the UI as the session progresses
+                this.updateDebugView();
+            };
+            
+            this.updateDebugView = () => {
+                // Update the reactive debugSession with deep cloning to force Alpine detection
+                const currentSession = this.voiceTestManager.getCurrentSession();
+                if (currentSession) {
+                    // Deep clone to ensure Alpine.js detects all nested changes
+                    this.debugSession = JSON.parse(JSON.stringify(currentSession));
+                } else {
+                    this.debugSession = null;
+                }
+                // Force Alpine to detect changes by incrementing counter
+                this.debugUpdateCounter++;
+            };
+            
+            this.handleDebugInputKeydown = (event) => {
+                // Auto-resize textarea
+                this.chatManager.autoResizeTextarea(event.target);
+                
+                if (event.key === 'Enter') {
+                    if (event.shiftKey) {
+                        // Shift+Enter: Allow new line (default behavior)
+                        return;
+                    } else {
+                        // Enter: Start debug session
+                        event.preventDefault();
+                        this.startDebugSession();
+                    }
+                }
+            };
+            
+            this.playDebugAudio = (modelId) => {
+                const session = this.voiceTestManager.getCurrentSession();
+                if (!session) return;
+                
+                this.voiceTestManager.playModelAudio(session.id, modelId);
+            };
+            
+            this.isDebugAudioPlaying = (modelId) => {
+                return this.audioManager.isPlaying(`debug-${modelId}`);
+            };
+            
+            this.formatModelStatus = (status) => {
+                const statusMap = {
+                    'pending': 'Pending',
+                    'generating_text': 'Generating Text',
+                    'text_completed': 'Text Generated',
+                    'generating_audio': 'Generating Audio',
+                    'completed': 'Completed',
+                    'failed': 'Failed'
+                };
+                return statusMap[status] || status;
+            };
+            
+            this.formatTiming = (start, end) => {
+                if (!start || !end) return 'N/A';
+                const duration = (end - start) / 1000;
+                return `${duration.toFixed(1)}s`;
+            };
+            
+            this.formatDebugDuration = (session) => {
+                if (!session) return '0s';
+                const start = session.startTime;
+                const end = session.endTime || Date.now();
+                return this.formatTiming(start, end);
+            };
+            
+            this.calculateOverallProgress = (session) => {
+                if (!session || !session.models || session.models.length === 0) return 0;
+                const totalProgress = session.models.reduce((sum, model) => sum + (model.progress || 0), 0);
+                return Math.round(totalProgress / session.models.length);
+            };
+            
+            this.exportDebugSession = () => {
+                const session = this.voiceTestManager.getCurrentSession();
+                if (!session) return;
+                
+                const exportData = this.voiceTestManager.exportSession(session.id);
+                const dataStr = JSON.stringify(exportData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `debug-session-${session.id}.json`;
+                link.click();
+                
+                URL.revokeObjectURL(link.href);
+            };
+            
+            // Load available voice models when entering debug view
+            this.loadAvailableVoiceModels = () => {
+                this.availableVoiceModels = this.voiceTestManager.getAllVoiceModels();
+                // Select all by default
+                this.selectedVoiceModels = new Set(this.availableVoiceModels.map(m => m.modelId));
+            };
+            
+            // Toggle voice model selection
+            this.toggleVoiceModel = (modelId) => {
+                if (this.selectedVoiceModels.has(modelId)) {
+                    this.selectedVoiceModels.delete(modelId);
+                } else {
+                    this.selectedVoiceModels.add(modelId);
+                }
+            };
+            
+            // Select/deselect all voice models
+            this.toggleAllVoiceModels = () => {
+                if (this.selectedVoiceModels.size === this.availableVoiceModels.length) {
+                    // All selected, so deselect all
+                    this.selectedVoiceModels.clear();
+                } else {
+                    // Some or none selected, so select all
+                    this.selectedVoiceModels = new Set(this.availableVoiceModels.map(m => m.modelId));
+                }
+            };
+            
+            // Get model selection count
+            this.getSelectedModelCount = () => {
+                return this.selectedVoiceModels.size;
+            };
+            
+            // Watch for view changes to load models when entering debug view
+            this.$watch('currentView', (newView) => {
+                if (newView === 'debug' && this.availableVoiceModels.length === 0) {
+                    this.loadAvailableVoiceModels();
+                }
+            });
+            
+            // Set up interval to update debug view during processing
+            setInterval(() => {
+                if (this.debugSession) {
+                    const isActive = this.debugSession.status === 'processing' || 
+                                   this.debugSession.status === 'initializing' || 
+                                   this.debugSession.status === 'ready';
+                    
+                    const isRecentlyCompleted = (this.debugSession.status === 'completed' ||
+                                               this.debugSession.status === 'partial_success' ||
+                                               this.debugSession.status === 'all_failed') &&
+                                               this.debugSession.endTime &&
+                                               (Date.now() - this.debugSession.endTime) < 5000; // Stop after 5 seconds
+                    
+                    if (isActive || isRecentlyCompleted) {
+                        this.updateDebugView();
+                    }
+                }
+            }, 500);
             
             // Settings methods
             this.saveSettings = () => this.settingsManager.saveSettings();

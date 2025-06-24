@@ -43,13 +43,7 @@ export class ChatManager {
             'dia-tts-clone': this.app.diaTTSGuide,
             'f5-tts': this.app.f5TTSGuide,
             'kokoro-tts': this.app.kokoroTTSGuide,
-            'chatterbox-tts': this.app.chatterboxTTSGuide,
-            'asynctts': this.app.cartesiaTTSGuide,
-            'asyncdia': this.app.cartesiaTTSGuide,
-            'cartesia': this.app.cartesiaTTSGuide,
-            'playht': this.app.playhtTTSGuide,
-            'rapidtts': this.app.rapidTTSGuide,
-            'rapiddia': this.app.rapidTTSGuide
+            'chatterbox-tts': this.app.chatterboxTTSGuide
         };
 
         // Get the appropriate guide for the current TTS provider

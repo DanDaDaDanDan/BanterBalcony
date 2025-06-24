@@ -9,6 +9,11 @@
     --shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
     --message-player: #4a4a4a;
     --message-system: #f0f2f4;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f3f4f6;
+    --primary-hover: #383838;
+    --error-color: #ef4444;
+    --success-color: #10b981;
 }
 
 * {
@@ -1104,8 +1109,8 @@ body {
     font-weight: 600;
 }
 
-/* Debug View */
-.debug-view {
+/* Logs View */
+.logs-view {
     padding: 2rem;
     width: 100%;
 }
@@ -1812,4 +1817,446 @@ body {
     color: var(--text-secondary);
     font-style: italic;
     opacity: 0.7;
+}
+
+/* Debug Voice Test View */
+.debug-voice-test-view {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.debug-voice-container h2 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.debug-description {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+/* Debug Input Section */
+.debug-input-section {
+    background-color: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.debug-input-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: vertical;
+    margin-bottom: 1rem;
+}
+
+.debug-input-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.debug-start-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.debug-start-button:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.debug-start-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.debug-start-button.processing {
+    background-color: var(--secondary-color);
+}
+
+/* Model Selection Section */
+.debug-model-selection {
+    background-color: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.selection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.selection-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.select-all-btn {
+    padding: 0.5rem 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.select-all-btn:hover {
+    background-color: var(--border-color);
+}
+
+.selection-info {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.model-selection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 0.75rem;
+    padding-right: 0.5rem;
+}
+
+.model-checkbox-label {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.model-checkbox-label:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(74, 74, 74, 0.05);
+}
+
+.model-checkbox {
+    margin-right: 0.75rem;
+    cursor: pointer;
+}
+
+.model-checkbox-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+/* Progress Overview */
+.debug-progress-overview {
+    background-color: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.stat-value.error {
+    color: var(--error-color);
+}
+
+.overall-progress-bar {
+    height: 8px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.overall-progress-bar .progress-fill {
+    height: 100%;
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+/* Models Grid */
+.debug-models-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.debug-model-card {
+    background-color: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1.25rem;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.debug-model-card.pending {
+    opacity: 0.6;
+}
+
+.debug-model-card.processing {
+    border-color: var(--secondary-color);
+}
+
+.debug-model-card.completed {
+    border-color: var(--success-color);
+}
+
+.debug-model-card.failed {
+    border-color: var(--error-color);
+}
+
+.model-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.model-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.model-status {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.status-badge.pending {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: var(--text-secondary);
+}
+
+.status-badge.generating_text,
+.status-badge.generating_audio {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--secondary-color);
+}
+
+.status-badge.completed {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+}
+
+.status-badge.failed {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--error-color);
+}
+
+.retry-badge {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.model-progress-bar {
+    height: 4px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+
+.model-progress-bar .progress-fill {
+    height: 100%;
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+.model-details {
+    margin-bottom: 0.75rem;
+}
+
+.model-error {
+    font-size: 0.85rem;
+    color: var(--error-color);
+    margin-bottom: 0.5rem;
+}
+
+.timing-info {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 1rem;
+}
+
+/* Model Actions */
+.model-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    background-color: var(--bg-secondary);
+    transform: translateY(-1px);
+}
+
+.play-btn.playing {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* Expandable Details */
+.model-expanded-details {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.detail-section {
+    margin-bottom: 1rem;
+}
+
+.detail-section h5 {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.dialogue-preview {
+    background-color: var(--bg-primary);
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.dialogue-line {
+    margin-bottom: 0.5rem;
+}
+
+.dialogue-line strong {
+    color: var(--primary-color);
+}
+
+.dialogue-more {
+    font-style: italic;
+    color: var(--text-secondary);
+}
+
+.prompt-content {
+    font-size: 0.85rem;
+}
+
+.prompt-system,
+.prompt-user {
+    margin-bottom: 0.5rem;
+}
+
+.prompt-content pre {
+    background-color: var(--bg-primary);
+    padding: 0.5rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin-top: 0.25rem;
+}
+
+/* Voice Configuration Details */
+.voice-config-details {
+    background-color: var(--bg-primary);
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.config-item {
+    margin-bottom: 0.5rem;
+}
+
+.config-item:last-child {
+    margin-bottom: 0;
+}
+
+.config-item strong {
+    color: var(--text-secondary);
+    margin-right: 0.5rem;
+}
+
+.config-item span {
+    color: var(--text-primary);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.85rem;
+}
+
+/* Export Section */
+.debug-export-section {
+    text-align: center;
+}
+
+.export-btn {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.export-btn:hover {
+    background-color: var(--bg-primary);
+    transform: translateY(-1px);
 } 

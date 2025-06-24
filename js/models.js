@@ -9,10 +9,14 @@ export class AIModels {
         const startTime = Date.now();
         const model = this.app[`${provider}Model`];
         
-        // Log the request
-        this.app.logDebug('request', provider, model, {
-            request: body,
-            url: url
+        // Log the request using new format
+        this.app.logDebug('request', {
+            url: url,
+            method: 'POST',
+            headers: headers,
+            body: body,
+            model: model,
+            provider: provider
         });
         
         try {
@@ -26,9 +30,16 @@ export class AIModels {
             
             if (!response.ok) {
                 const errorText = await response.text();
-                this.app.logDebug('error', provider, model, {
-                    error: `HTTP ${response.status}: ${errorText}`,
-                    duration: duration
+                this.app.logDebug('response', {
+                    url: url,
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: Object.fromEntries(response.headers.entries()),
+                    duration: duration,
+                    success: false,
+                    model: model,
+                    provider: provider,
+                    error: { message: `HTTP ${response.status}: ${errorText}`, raw_response: errorText }
                 });
                 throw new Error(`API error: ${response.status}`);
             }
@@ -36,19 +47,28 @@ export class AIModels {
             const data = await response.json();
             const parsedResponse = responseParser(data);
             
-            // Log the response
-            this.app.logDebug('response', provider, model, {
-                response: data,
-                parsedResponse: parsedResponse,
-                duration: duration
+            // Log the response using new format
+            this.app.logDebug('response', {
+                url: url,
+                status: response.status,
+                statusText: response.statusText,
+                headers: Object.fromEntries(response.headers.entries()),
+                duration: duration,
+                success: true,
+                model: model,
+                provider: provider,
+                data: data,
+                parsedResponse: parsedResponse
             });
             
             return parsedResponse;
         } catch (error) {
             const duration = Date.now() - startTime;
-            this.app.logDebug('error', provider, model, {
+            this.app.logDebug('error', {
                 error: error.message,
-                duration: duration
+                duration: duration,
+                model: model,
+                provider: provider
             });
             throw error;
         }
