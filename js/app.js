@@ -35,7 +35,6 @@ window.banterBalconyApp = function() {
         // Google settings
         googleKey: localStorage.getItem('google_api_key') || '',
         googleModel: localStorage.getItem('google_model') || 'gemini-2.5-flash',
-        geminiVoice: localStorage.getItem('gemini_voice') || 'Kore',
         
         // xAI settings
         xaiKey: localStorage.getItem('xai_api_key') || '',
@@ -53,7 +52,6 @@ window.banterBalconyApp = function() {
         // Fal.ai settings
         falKey: localStorage.getItem('fal_api_key') || '',
         falModel: localStorage.getItem('fal_model') || 'orpheus-tts',
-        falVoice: localStorage.getItem('fal_voice') || 'default',
         
         // TTS Provider settings (independent of text generation)
         ttsProvider: localStorage.getItem('tts_provider') || 'elevenlabs', // 'elevenlabs', 'gemini', or 'fal'

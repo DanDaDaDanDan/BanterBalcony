@@ -258,6 +258,12 @@ export class VoiceTestManager {
             model.audioUrl = audioResult.audioUrl;
             model.timings.audioEnd = Date.now();
             model.progress = 100;
+            
+            // Check if we actually got audio - if not, mark as failed
+            if (!model.audioUrl) {
+                throw new Error('No audio URL generated');
+            }
+            
             model.status = 'completed';
             
         } catch (error) {
@@ -419,7 +425,6 @@ export class VoiceTestManager {
         // Store the current TTS provider settings
         const originalProvider = this.app.ttsProvider;
         const originalElevenlabsModel = this.app.elevenlabsModel;
-        const originalGeminiVoice = this.app.geminiVoice;
         const originalGoogleModel = this.app.googleModel;
         
         try {
@@ -470,7 +475,6 @@ export class VoiceTestManager {
             // Restore original settings
             this.app.ttsProvider = originalProvider;
             this.app.elevenlabsModel = originalElevenlabsModel;
-            this.app.geminiVoice = originalGeminiVoice;
             this.app.googleModel = originalGoogleModel;
         }
     }

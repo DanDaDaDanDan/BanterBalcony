@@ -436,9 +436,12 @@ export class GeminiProvider extends BaseTTSProvider {
     }
 
     getVoiceForSpeaker(speaker) {
-        if (!this.app.currentPersona) return null;
-        const geminiVoices = this.app.currentPersona.gemini_voices || {};
-        return geminiVoices[speaker] || this.app.geminiVoice || 'Kore';
+        // Use parent class implementation which requires voice profiles
+        const voice = super.getVoiceForSpeaker(speaker);
+        if (!voice) {
+            throw new Error(`No voice profile configured for speaker "${speaker}". Please assign a voice profile.`);
+        }
+        return voice;
     }
 
     async generateDialogueAudio(dialogue) {
@@ -446,19 +449,16 @@ export class GeminiProvider extends BaseTTSProvider {
         
         try {
             // Build multi-speaker context
-            const geminiVoices = this.app.currentPersona?.gemini_voices || {};
             const speakerNames = [...new Set(dialogue.map(msg => msg.speaker))];
             
             let fullContext = "You are generating speech for a multi-character dialogue. ";
             
-            if (Object.keys(geminiVoices).length > 0) {
-                fullContext += "Voice assignments:\n";
-                speakerNames.forEach(speaker => {
-                    const voiceName = geminiVoices[speaker] || 'Kore';
-                    fullContext += `- ${speaker}: Use ${voiceName} voice characteristics\n`;
-                });
-                fullContext += "\n";
-            }
+            fullContext += "Voice assignments:\n";
+            speakerNames.forEach(speaker => {
+                const voiceName = this.getVoiceForSpeaker(speaker);
+                fullContext += `- ${speaker}: Use ${voiceName} voice characteristics\n`;
+            });
+            fullContext += "\n";
             
             fullContext += "Generate natural speech for the following dialogue with distinct voices for each speaker:\n\n";
             
@@ -467,13 +467,13 @@ export class GeminiProvider extends BaseTTSProvider {
             });
             
             const primarySpeaker = dialogue[0]?.speaker;
-            const primaryVoice = geminiVoices[primarySpeaker] || this.app.geminiVoice || 'Kore';
+            const primaryVoice = this.getVoiceForSpeaker(primarySpeaker);
             
             const speakerVoiceConfigs = speakerNames.map(speaker => ({
                 speaker: speaker,
                 voiceConfig: {
                     prebuiltVoiceConfig: {
-                        voiceName: geminiVoices[speaker] || 'Kore'
+                        voiceName: this.getVoiceForSpeaker(speaker)
                     }
                 }
             }));
@@ -1126,39 +1126,63 @@ export class FalProvider extends BaseTTSProvider {
         // Base request - different models use different field names
         let request = {};
         
+        // Handle case where voiceConfig is just a string (voiceId) from base class
+        if (typeof voiceConfig === 'string') {
+            voiceConfig = { voice: voiceConfig };
+        }
+        
         // Model-specific configurations
         switch (model) {
             case 'playai-tts-dialog':
                 // PlayAI Dialog uses 'input' field
                 request.input = text;
-                if (voiceConfig?.voice || this.app.falVoice) {
-                    request.voice = voiceConfig?.voice || this.app.falVoice || 'default';
+                // PlayAI uses simple voice names like "Jennifer", "Angelo", etc.
+                if (!voiceConfig?.voice) {
+                    throw new Error('No voice profile configured for this speaker. Please assign a voice profile.');
                 }
+                request.voice = voiceConfig.voice;
+                console.log('[DEBUG] PlayAI Dialog request:', request);
                 break;
                 
             case 'playai-tts-v3':
-                // PlayAI V3 uses 'input' and requires 'voice'
+                // PlayAI V3 uses 'input' and requires valid voice name
                 request.input = text;
-                request.voice = voiceConfig?.voice || this.app.falVoice || 'default';
+                // Use simple voice names from voice profiles
+                if (!voiceConfig?.voice) {
+                    throw new Error('No voice profile configured for this speaker. Please assign a voice profile.');
+                }
+                request.voice = voiceConfig.voice;
                 if (voiceConfig?.emotion) {
                     request.emotion = voiceConfig.emotion;
                 }
+                console.log('[DEBUG] PlayAI V3 request:', request);
+                console.log('[DEBUG] Available voice config:', voiceConfig);
                 break;
                 
             case 'f5-tts':
                 request.gen_text = text;
                 request.model_type = 'F5-TTS';
                 request.remove_silence = true;
-                // F5-TTS requires reference audio - provide defaults if not configured
-                request.ref_audio_url = voiceConfig?.referenceAudio || 'https://github.com/SWivid/F5-TTS/raw/main/tests/ref_audio/test_en_1_ref_short.wav';
-                request.ref_text = voiceConfig?.referenceText || 'Some call me nature, others call me mother nature.';
+                // F5-TTS REQUIRES reference audio
+                if (!voiceConfig?.referenceAudio || !voiceConfig?.referenceText) {
+                    throw new Error('F5-TTS requires reference audio and text. Please configure a voice profile with reference audio.');
+                }
+                request.ref_audio_url = voiceConfig.referenceAudio;
+                request.ref_text = voiceConfig.referenceText;
+                console.log('[DEBUG] F5-TTS request:', request);
                 break;
                 
             case 'dia-tts-clone':
                 request.text = text;
-                // DIA Clone requires reference audio - provide defaults if not configured
-                request.reference_audio_url = voiceConfig?.referenceAudio || 'https://github.com/SWivid/F5-TTS/raw/main/tests/ref_audio/test_en_1_ref_short.wav';
-                request.reference_text = voiceConfig?.referenceText || 'Some call me nature, others call me mother nature.';
+                // DIA Clone REQUIRES all three fields
+                if (!voiceConfig?.referenceAudio || !voiceConfig?.referenceText) {
+                    throw new Error('DIA Clone requires reference audio and text. Please configure a voice profile with reference audio.');
+                }
+                request.ref_audio_url = voiceConfig.referenceAudio;
+                request.ref_text = voiceConfig.referenceText;
+                console.log('[DEBUG] DIA Clone request:', request);
+                console.log('[DEBUG] Request keys:', Object.keys(request));
+                console.log('[DEBUG] Full request object:', JSON.stringify(request, null, 2));
                 break;
                 
             default:
@@ -1174,9 +1198,38 @@ export class FalProvider extends BaseTTSProvider {
     async generateDialogueAudio(dialogue) {
         const model = this.getCurrentModel();
         
-        // Check if model supports native dialogue
+        // Check if model supports native multi-speaker dialogue
         if (model === 'playai-tts-dialog') {
-            return this.generateDialogueWithPlayAI(dialogue);
+            // PlayAI Dialog only supports single voice - check if all speakers use the same voice
+            const speakers = [...new Set(dialogue.map(msg => msg.speaker))];
+            
+            if (speakers.length === 1) {
+                // Single speaker - safe to use dialogue mode
+                return this.generateDialogueWithPlayAI(dialogue);
+            }
+            
+            // Multiple speakers - check if they all have the same voice profile
+            const voiceConfigs = speakers.map(speaker => {
+                try {
+                    return this.getVoiceForSpeaker(speaker);
+                } catch (error) {
+                    // If any speaker lacks a voice profile, we'll fail anyway
+                    throw error;
+                }
+            });
+            
+            // Check if all voice configs are the same
+            const firstVoice = voiceConfigs[0];
+            const allSameVoice = voiceConfigs.every(voice => voice === firstVoice);
+            
+            if (allSameVoice) {
+                // All speakers use same voice - can use dialogue mode efficiently
+                return this.generateDialogueWithPlayAI(dialogue);
+            } else {
+                // Different voices needed - fall back to individual generation for proper multi-speaker
+                console.log('[DEBUG] PlayAI Dialog: Multiple speakers with different voices detected, using individual generation for proper voice differentiation');
+                return this.generateIndividualAudios(dialogue);
+            }
         }
         
         // Fall back to individual generation
@@ -1185,11 +1238,22 @@ export class FalProvider extends BaseTTSProvider {
 
     async generateDialogueWithPlayAI(dialogue) {
         try {
+            // Get the primary speaker's voice (first speaker in dialogue)
+            const primarySpeaker = dialogue[0]?.speaker;
+            if (!primarySpeaker) {
+                throw new Error('No speakers found in dialogue');
+            }
+            
+            const voiceConfig = this.getVoiceForSpeaker(primarySpeaker);
+            if (!voiceConfig) {
+                throw new Error(`No voice profile configured for primary speaker "${primarySpeaker}". Please assign a voice profile.`);
+            }
+            
             // Format dialogue for PlayAI Dialog API
             const dialogueText = dialogue.map(msg => `${msg.speaker}: ${msg.text}`).join('\n');
             const requestData = {
-                text: dialogueText,
-                voice: this.app.falVoice || 'default'
+                input: dialogueText,  // PlayAI Dialog uses 'input' not 'text'
+                voice: voiceConfig // Use primary speaker's voice for the entire dialogue
             };
             
             // Use direct API for PlayAI

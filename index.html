@@ -527,20 +527,6 @@
                             </div>
                         </div>
                         
-                        <!-- Gemini specific settings -->
-                        <div x-show="ttsProvider === 'gemini'">
-                            <div class="form-group">
-                                <label>Gemini Voice</label>
-                                <select x-model="geminiVoice" @change="saveSettings()">
-                                    <option value="Kore">Kore (Default)</option>
-                                    <option value="Zephyr">Zephyr</option>
-                                    <option value="Puck">Puck</option>
-                                    <option value="Charon">Charon</option>
-                                    <option value="Fenrir">Fenrir</option>
-                                    <option value="Aoede">Aoede</option>
-                                </select>
-                            </div>
-                        </div>
                         
                         <!-- fal.ai models info -->
                         <div x-show="ttsProvider && ttsProvider.includes('tts')" class="temperature-description" style="margin-top: 0.5rem;">
@@ -889,16 +875,34 @@
                                 </div>
                                 
                                 <!-- Action Buttons -->
-                                <div x-show="model.status === 'completed'" class="model-actions">
+                                <div class="model-actions">
+                                    <!-- Show play button only for completed models with audio -->
+                                    <div x-show="model.status === 'completed' && model.audioUrl">
+                                        <button 
+                                            @click="playDebugAudio(model.modelId)"
+                                            class="action-btn play-btn"
+                                            :class="{'playing': isDebugAudioPlaying(model.modelId)}"
+                                        >
+                                            <span x-show="!isDebugAudioPlaying(model.modelId)">▶ Play</span>
+                                            <span x-show="isDebugAudioPlaying(model.modelId)">⏸ Pause</span>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Show error state for failed models -->
+                                    <div x-show="model.status === 'failed'" class="error-state">
+                                        <span class="error-icon">❌</span>
+                                        <span class="error-text">Generation Failed</span>
+                                    </div>
+                                    
+                                    <!-- Show no audio state for completed models without audio -->
+                                    <div x-show="model.status === 'completed' && !model.audioUrl" class="no-audio-state">
+                                        <span class="warning-icon">⚠️</span>
+                                        <span class="warning-text">No Audio Generated</span>
+                                    </div>
+                                    
+                                    <!-- Inspect button for completed models (with or without audio) -->
                                     <button 
-                                        @click="playDebugAudio(model.modelId)"
-                                        class="action-btn play-btn"
-                                        :class="{'playing': isDebugAudioPlaying(model.modelId)}"
-                                    >
-                                        <span x-show="!isDebugAudioPlaying(model.modelId)">▶ Play</span>
-                                        <span x-show="isDebugAudioPlaying(model.modelId)">⏸ Pause</span>
-                                    </button>
-                                    <button 
+                                        x-show="model.status === 'completed' || model.status === 'failed'"
                                         @click="model.showDetails = !model.showDetails"
                                         class="action-btn inspect-btn"
                                     >
