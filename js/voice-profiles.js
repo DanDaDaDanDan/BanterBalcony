@@ -134,11 +134,11 @@ export class VoiceProfileManager {
                     'elevenlabs': { voiceId: 'yoZ06aMxZJJ28mfd3POQ' }, // Sam - young American
                     'gemini': { voiceName: 'Puck' },
                     'orpheus-tts': { voice: 'Orpheus' },
-                    'playai-tts-v3': { voice: 'Angelo' },
-                    'playai-tts-dialog': { voice: 'Angelo' },
+                    'playai-tts-v3': { voice: 'Dexter (English (US)/American)' },
+                    'playai-tts-dialog': { voice: 'Dexter (English (US)/American)' },
                     'dia-tts': { voice: 'cheerful_male' },
-                    'dia-tts-clone': { voice: 'young_male' },
-                    'f5-tts': { voice: 'male_1' },
+                    'dia-tts-clone': { voice: 'young_male', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/reference_audio.wav', referenceText: 'Hello there, this is a sample of my voice for cloning purposes.' },
+                    'f5-tts': { voice: 'male_1', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/reference_audio.wav', referenceText: 'Hello there, this is a sample of my voice for cloning purposes.' },
                     'kokoro-tts': { voice: 'af_connor' },
                     'chatterbox-tts': { voice: 'male_young' }
                 }
@@ -158,11 +158,11 @@ export class VoiceProfileManager {
                     'elevenlabs': { voiceId: 'EXAVITQu4vr4xnSDxMaL' }, // Sarah
                     'gemini': { voiceName: 'Zephyr' },
                     'orpheus-tts': { voice: 'Aoede' },
-                    'playai-tts-v3': { voice: 'Jennifer' },
-                    'playai-tts-dialog': { voice: 'Jennifer' },
+                    'playai-tts-v3': { voice: 'Jennifer (English (US)/American)' },
+                    'playai-tts-dialog': { voice: 'Jennifer (English (US)/American)' },
                     'dia-tts': { voice: 'cheerful_female' },
-                    'dia-tts-clone': { voice: 'young_female' },
-                    'f5-tts': { voice: 'female_1' },
+                    'dia-tts-clone': { voice: 'young_female', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/female_reference.wav', referenceText: 'Hi everyone, this is how I naturally speak when I talk.' },
+                    'f5-tts': { voice: 'female_1', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/female_reference.wav', referenceText: 'Hi everyone, this is how I naturally speak when I talk.' },
                     'kokoro-tts': { voice: 'af_sarah' },
                     'chatterbox-tts': { voice: 'female_young' }
                 }
@@ -183,11 +183,11 @@ export class VoiceProfileManager {
                     'elevenlabs': { voiceId: 'pNInz6obpgDQGcFmaJgB' }, // Adam - deep American
                     'gemini': { voiceName: 'Charon' },
                     'orpheus-tts': { voice: 'Zeus' },
-                    'playai-tts-v3': { voice: 'Michael' },
-                    'playai-tts-dialog': { voice: 'Michael' },
+                    'playai-tts-v3': { voice: 'Sterling (English (GB)/British)' },
+                    'playai-tts-dialog': { voice: 'Sterling (English (GB)/British)' },
                     'dia-tts': { voice: 'authoritative_male' },
-                    'dia-tts-clone': { voice: 'mature_male' },
-                    'f5-tts': { voice: 'male_2' },
+                    'dia-tts-clone': { voice: 'mature_male', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/mature_male_ref.wav', referenceText: 'Good evening, this represents my authoritative speaking style.' },
+                    'f5-tts': { voice: 'male_2', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/mature_male_ref.wav', referenceText: 'Good evening, this represents my authoritative speaking style.' },
                     'kokoro-tts': { voice: 'am_michael' },
                     'chatterbox-tts': { voice: 'male_mature' }
                 }
@@ -207,11 +207,11 @@ export class VoiceProfileManager {
                     'elevenlabs': { voiceId: 'XrExE9yKIg1WjnnlVkGX' }, // Matilda - American
                     'gemini': { voiceName: 'Kore' },
                     'orpheus-tts': { voice: 'Hera' },
-                    'playai-tts-v3': { voice: 'Sarah' },
-                    'playai-tts-dialog': { voice: 'Sarah' },
+                    'playai-tts-v3': { voice: 'Charlotte (Advertising) (English (CA)/Canadian)' },
+                    'playai-tts-dialog': { voice: 'Charlotte (Advertising) (English (CA)/Canadian)' },
                     'dia-tts': { voice: 'professional_female' },
-                    'dia-tts-clone': { voice: 'mature_female' },
-                    'f5-tts': { voice: 'female_2' },
+                    'dia-tts-clone': { voice: 'mature_female', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/professional_female.wav', referenceText: 'Welcome, this demonstrates my professional speaking voice.' },
+                    'f5-tts': { voice: 'female_2', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/professional_female.wav', referenceText: 'Welcome, this demonstrates my professional speaking voice.' },
                     'kokoro-tts': { voice: 'af_nicole' },
                     'chatterbox-tts': { voice: 'female_mature' }
                 }
@@ -232,11 +232,11 @@ export class VoiceProfileManager {
                     'elevenlabs': { voiceId: 'JBFqnCBsd6RMkjVDRZzb' }, // George - British
                     'gemini': { voiceName: 'Kore' },
                     'orpheus-tts': { voice: 'Gandalf' },
-                    'playai-tts-v3': { voice: 'William' },
-                    'playai-tts-dialog': { voice: 'William' },
+                    'playai-tts-v3': { voice: 'Cecil (English (GB)/British)' },
+                    'playai-tts-dialog': { voice: 'Cecil (English (GB)/British)' },
                     'dia-tts': { voice: 'wise_elder' },
-                    'dia-tts-clone': { voice: 'elder_male' },
-                    'f5-tts': { voice: 'male_3' },
+                    'dia-tts-clone': { voice: 'elder_male', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/wise_elder.wav', referenceText: 'My dear friends, this is how wisdom sounds when spoken aloud.' },
+                    'f5-tts': { voice: 'male_3', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/wise_elder.wav', referenceText: 'My dear friends, this is how wisdom sounds when spoken aloud.' },
                     'kokoro-tts': { voice: 'bf_william' },
                     'chatterbox-tts': { voice: 'male_elder' }
                 }
@@ -256,11 +256,11 @@ export class VoiceProfileManager {
                     'elevenlabs': { voiceId: 'LcfcDJNUP1GQjkzn1xUU' }, // Emily - calm American
                     'gemini': { voiceName: 'Aoede' },
                     'orpheus-tts': { voice: 'Grandmother' },
-                    'playai-tts-v3': { voice: 'Linda' },
-                    'playai-tts-dialog': { voice: 'Linda' },
+                    'playai-tts-v3': { voice: 'Charlotte (Meditation) (English (CA)/Canadian)' },
+                    'playai-tts-dialog': { voice: 'Charlotte (Meditation) (English (CA)/Canadian)' },
                     'dia-tts': { voice: 'warm_female' },
-                    'dia-tts-clone': { voice: 'elder_female' },
-                    'f5-tts': { voice: 'female_3' },
+                    'dia-tts-clone': { voice: 'elder_female', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/warm_grandmother.wav', referenceText: 'Hello sweetheart, this is my gentle and caring voice.' },
+                    'f5-tts': { voice: 'female_3', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/warm_grandmother.wav', referenceText: 'Hello sweetheart, this is my gentle and caring voice.' },
                     'kokoro-tts': { voice: 'bf_emma' },
                     'chatterbox-tts': { voice: 'female_elder' }
                 }
@@ -281,11 +281,11 @@ export class VoiceProfileManager {
                     'elevenlabs': { voiceId: 'flq6f7yk4E4fJM5XTYuZ' }, // Michael - British
                     'gemini': { voiceName: 'Fenrir' },
                     'orpheus-tts': { voice: 'Loki' },
-                    'playai-tts-v3': { voice: 'Christopher' },
-                    'playai-tts-dialog': { voice: 'Christopher' },
+                    'playai-tts-v3': { voice: 'Cillian (English (IE)/Irish)' },
+                    'playai-tts-dialog': { voice: 'Cillian (English (IE)/Irish)' },
                     'dia-tts': { voice: 'eccentric_male' },
-                    'dia-tts-clone': { voice: 'character_male' },
-                    'f5-tts': { voice: 'male_4' },
+                    'dia-tts-clone': { voice: 'character_male', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/eccentric_character.wav', referenceText: 'Ah yes, quite fascinating indeed, this is my distinctive speaking manner.' },
+                    'f5-tts': { voice: 'male_4', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/eccentric_character.wav', referenceText: 'Ah yes, quite fascinating indeed, this is my distinctive speaking manner.' },
                     'kokoro-tts': { voice: 'bf_james' },
                     'chatterbox-tts': { voice: 'male_character' }
                 }
@@ -305,11 +305,11 @@ export class VoiceProfileManager {
                     'elevenlabs': { voiceId: 'piTKgcLEGmPE4e6mEKli' }, // Dorothy - British
                     'gemini': { voiceName: 'Zephyr' },
                     'orpheus-tts': { voice: 'Luna' },
-                    'playai-tts-v3': { voice: 'Emma' },
-                    'playai-tts-dialog': { voice: 'Emma' },
+                    'playai-tts-v3': { voice: 'Madison (English (IE)/Irish)' },
+                    'playai-tts-dialog': { voice: 'Madison (English (IE)/Irish)' },
                     'dia-tts': { voice: 'mystical_female' },
-                    'dia-tts-clone': { voice: 'ethereal_female' },
-                    'f5-tts': { voice: 'female_4' },
+                    'dia-tts-clone': { voice: 'ethereal_female', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/mystical_voice.wav', referenceText: 'Whispers from beyond, this is how the ethereal realm speaks.' },
+                    'f5-tts': { voice: 'female_4', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/mystical_voice.wav', referenceText: 'Whispers from beyond, this is how the ethereal realm speaks.' },
                     'kokoro-tts': { voice: 'bf_isabella' },
                     'chatterbox-tts': { voice: 'female_character' }
                 }
@@ -330,11 +330,11 @@ export class VoiceProfileManager {
                     'elevenlabs': { voiceId: 'ErXwobaYiN019PkySvjV' }, // Antoni - calm American
                     'gemini': { voiceName: 'Zephyr' },
                     'orpheus-tts': { voice: 'Sage' },
-                    'playai-tts-v3': { voice: 'Alex' },
-                    'playai-tts-dialog': { voice: 'Alex' },
+                    'playai-tts-v3': { voice: 'Ava (English (AU)/Australian)' },
+                    'playai-tts-dialog': { voice: 'Ava (English (AU)/Australian)' },
                     'dia-tts': { voice: 'calm_neutral' },
-                    'dia-tts-clone': { voice: 'neutral_calm' },
-                    'f5-tts': { voice: 'neutral_1' },
+                    'dia-tts-clone': { voice: 'neutral_calm', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/calm_neutral.wav', referenceText: 'This is a balanced, peaceful way of speaking clearly.' },
+                    'f5-tts': { voice: 'neutral_1', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/calm_neutral.wav', referenceText: 'This is a balanced, peaceful way of speaking clearly.' },
                     'kokoro-tts': { voice: 'af_sky' },
                     'chatterbox-tts': { voice: 'neutral_calm' }
                 }
@@ -354,11 +354,11 @@ export class VoiceProfileManager {
                     'elevenlabs': { voiceId: 't0jbNlBVZ17f02VDIeMI' }, // Adam (alternate) - American
                     'gemini': { voiceName: 'Puck' },
                     'orpheus-tts': { voice: 'Sprite' },
-                    'playai-tts-v3': { voice: 'Jordan' },
-                    'playai-tts-dialog': { voice: 'Jordan' },
+                    'playai-tts-v3': { voice: 'Tilly (English (AU)/Australian)' },
+                    'playai-tts-dialog': { voice: 'Tilly (English (AU)/Australian)' },
                     'dia-tts': { voice: 'energetic_neutral' },
-                    'dia-tts-clone': { voice: 'neutral_energetic' },
-                    'f5-tts': { voice: 'neutral_2' },
+                    'dia-tts-clone': { voice: 'neutral_energetic', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/energetic_neutral.wav', referenceText: 'Hey there! This is my upbeat and enthusiastic speaking style!' },
+                    'f5-tts': { voice: 'neutral_2', referenceAudio: 'https://storage.googleapis.com/falserverless/example_inputs/energetic_neutral.wav', referenceText: 'Hey there! This is my upbeat and enthusiastic speaking style!' },
                     'kokoro-tts': { voice: 'af_riley' },
                     'chatterbox-tts': { voice: 'neutral_energetic' }
                 }

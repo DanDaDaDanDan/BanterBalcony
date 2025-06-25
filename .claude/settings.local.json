@@ -4,7 +4,9 @@
       "Bash(find:*)",
       "Bash(ls:*)",
       "Bash(grep:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "WebFetch(domain:chatgpt.com)",
+      "WebFetch(domain:fal.ai)"
     ],
     "deny": []
   }
