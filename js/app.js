@@ -6,6 +6,7 @@ import { VoiceTestManager } from './voice-test.js';
 import { SettingsManager } from './settings.js';
 import { AudioManager } from './audio.js';
 import { VoiceProfileManager } from './voice-profiles.js';
+import { setupGlobalErrorHandler, InputSanitizer, ErrorHandler, SafeStorage } from '../utils.js';
 
 window.banterBalconyApp = function() {
     const app = {
@@ -103,12 +104,6 @@ window.banterBalconyApp = function() {
                 case 'deepseek': return this.deepseekModel;
                 default: return '';
             }
-        },
-        
-        // Method to play audio
-        playAudio(audioUrl) {
-            const audio = new Audio(audioUrl);
-            audio.play();
         },
         
         // Chat state
@@ -937,6 +932,9 @@ window.banterBalconyApp = function() {
             }
         }
     };
+    
+    // Setup global error handler
+    setupGlobalErrorHandler(app);
     
     return app;
 };

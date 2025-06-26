@@ -1141,7 +1141,6 @@ export class FalProvider extends BaseTTSProvider {
                     throw new Error('No voice profile configured for this speaker. Please assign a voice profile.');
                 }
                 request.voice = voiceConfig.voice;
-                console.log('[DEBUG] PlayAI Dialog request:', request);
                 break;
                 
             case 'playai-tts-v3':
@@ -1155,8 +1154,6 @@ export class FalProvider extends BaseTTSProvider {
                 if (voiceConfig?.emotion) {
                     request.emotion = voiceConfig.emotion;
                 }
-                console.log('[DEBUG] PlayAI V3 request:', request);
-                console.log('[DEBUG] Available voice config:', voiceConfig);
                 break;
                 
             case 'f5-tts':
@@ -1169,7 +1166,6 @@ export class FalProvider extends BaseTTSProvider {
                 }
                 request.ref_audio_url = voiceConfig.referenceAudio;
                 request.ref_text = voiceConfig.referenceText;
-                console.log('[DEBUG] F5-TTS request:', request);
                 break;
                 
             case 'dia-tts-clone':
@@ -1180,9 +1176,6 @@ export class FalProvider extends BaseTTSProvider {
                 }
                 request.ref_audio_url = voiceConfig.referenceAudio;
                 request.ref_text = voiceConfig.referenceText;
-                console.log('[DEBUG] DIA Clone request:', request);
-                console.log('[DEBUG] Request keys:', Object.keys(request));
-                console.log('[DEBUG] Full request object:', JSON.stringify(request, null, 2));
                 break;
                 
             default:
@@ -1227,7 +1220,6 @@ export class FalProvider extends BaseTTSProvider {
                 return this.generateDialogueWithPlayAI(dialogue);
             } else {
                 // Different voices needed - fall back to individual generation for proper multi-speaker
-                console.log('[DEBUG] PlayAI Dialog: Multiple speakers with different voices detected, using individual generation for proper voice differentiation');
                 return this.generateIndividualAudios(dialogue);
             }
         }

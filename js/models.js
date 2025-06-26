@@ -1,4 +1,6 @@
 // AI Models and API Provider implementations
+import { safeRequest, ErrorHandler, safeJSONParse } from '../utils.js';
+
 export class AIModels {
     constructor(app) {
         this.app = app;
@@ -20,7 +22,7 @@ export class AIModels {
         });
         
         try {
-            const response = await fetch(url, {
+            const response = await safeRequest(url, {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify(body)
@@ -44,7 +46,11 @@ export class AIModels {
                 throw new Error(`API error: ${response.status}`);
             }
             
-            const data = await response.json();
+            const responseText = await response.text();
+            const data = safeJSONParse(responseText);
+            if (!data) {
+                throw new Error('Invalid JSON response from API');
+            }
             const parsedResponse = responseParser(data);
             
             // Log the response using new format

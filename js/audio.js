@@ -1,5 +1,6 @@
 // Audio management functionality with unified TTS provider system
 import { ttsProviderRegistry } from './tts-providers.js';
+import { AudioResourceTracker, ErrorHandler } from '../utils.js';
 
 export class AudioManager {
     constructor(app) {
@@ -7,6 +8,7 @@ export class AudioManager {
         this.currentAudio = null;
         this.currentlyPlayingMessageIndex = null;
         this.ttsProvider = null;
+        this.audioUrls = new Set(); // Track created URLs for cleanup
     }
 
     // Get current TTS provider instance
@@ -35,9 +37,6 @@ export class AudioManager {
         const result = await this.generateDialogueAudioWithIndividual(dialogue);
         return result.conversationAudioUrl;
     }
-
-
-
     // Concatenate multiple audio blobs into a single audio file
     async concatenateAudioBlobs(audioBlobs) {
         if (!audioBlobs || audioBlobs.length === 0) {
@@ -89,6 +88,15 @@ export class AudioManager {
             console.error('Error concatenating audio blobs:', error);
             // Fallback: return the first blob if concatenation fails
             return audioBlobs[0];
+        } finally {
+            // Always close audio context if it was created
+            if (audioContext && audioContext.state !== 'closed') {
+                try {
+                    await audioContext.close();
+                } catch (e) {
+                    console.error('Error closing audio context:', e);
+                }
+            }
         }
     }
 
@@ -174,7 +182,8 @@ export class AudioManager {
                 this.stopAudio();
             });
         } catch (error) {
-            console.error('Error creating audio element:', error);
+            const message = ErrorHandler.handle(error, 'audio-creation');
+            console.error('Error creating audio element:', message);
             this.stopAudio();
         }
     }
@@ -200,12 +209,14 @@ export class AudioManager {
                 // Gemini native audio data (base64)
                 const audioBlob = this.base64ToBlob(message.audioData, message.audioMimeType);
                 audioSrc = URL.createObjectURL(audioBlob);
+                this.audioUrls.add(audioSrc); // Track for cleanup
             } else {
                 console.warn('No audio data available for message');
                 return;
             }
 
             this.currentAudio = new Audio(audioSrc);
+            AudioResourceTracker.track(this.currentAudio, audioSrc);
             this.currentlyPlayingMessageIndex = messageIndex;
             
             // Update UI state
@@ -214,31 +225,22 @@ export class AudioManager {
             // Set up event listeners
             this.currentAudio.addEventListener('ended', () => {
                 this.stopAudio();
-                // Clean up object URL if we created one for Gemini audio
-                if (message.audioData && audioSrc.startsWith('blob:')) {
-                    URL.revokeObjectURL(audioSrc);
-                }
             });
             
             this.currentAudio.addEventListener('error', (error) => {
-                console.error('Error playing audio:', error);
+                const message = ErrorHandler.handle(error, 'audio-playback');
+                console.error('Error playing audio:', message);
                 this.stopAudio();
-                // Clean up object URL if we created one for Gemini audio
-                if (message.audioData && audioSrc.startsWith('blob:')) {
-                    URL.revokeObjectURL(audioSrc);
-                }
             });
             
             this.currentAudio.play().catch(error => {
-                console.error('Error playing audio:', error);
+                const message = ErrorHandler.handle(error, 'audio-play');
+                console.error('Error playing audio:', message);
                 this.stopAudio();
-                // Clean up object URL if we created one for Gemini audio
-                if (message.audioData && audioSrc.startsWith('blob:')) {
-                    URL.revokeObjectURL(audioSrc);
-                }
             });
         } catch (error) {
-            console.error('Error creating audio element:', error);
+            const message = ErrorHandler.handle(error, 'audio-creation');
+            console.error('Error creating audio element:', message);
             this.stopAudio();
         }
     }
@@ -261,8 +263,15 @@ export class AudioManager {
         if (this.currentAudio) {
             this.currentAudio.pause();
             this.currentAudio.currentTime = 0;
+            AudioResourceTracker.cleanup(this.currentAudio);
             this.currentAudio = null;
         }
+        
+        // Clean up any blob URLs we created
+        for (const url of this.audioUrls) {
+            URL.revokeObjectURL(url);
+        }
+        this.audioUrls.clear();
         
         this.currentlyPlayingMessageIndex = null;
         this.app.currentlyPlayingMessageIndex = null;
@@ -291,6 +300,7 @@ export class AudioManager {
         
         try {
             this.currentAudio = new Audio(conversationAudioUrl);
+            AudioResourceTracker.track(this.currentAudio, conversationAudioUrl);
             this.currentlyPlayingMessageIndex = 'conversation';
             
             // Update UI state

@@ -1,4 +1,6 @@
 // Chat and messaging functionality
+import { InputSanitizer } from '../utils.js';
+
 export class ChatManager {
     constructor(app) {
         this.app = app;
@@ -16,7 +18,7 @@ export class ChatManager {
     async sendMessage() {
         if (!this.app.currentInput.trim() || !this.app.apiKey || this.app.processing) return;
         
-        const userMessage = this.app.currentInput.trim();
+        const userMessage = InputSanitizer.sanitizeText(this.app.currentInput.trim());
         this.app.currentInput = '';
         
         // Add user message
@@ -58,8 +60,6 @@ export class ChatManager {
                Each line should be in the format "Speaker: Dialogue text".
                Keep responses conversational and engaging.`;
     }
-
-
     
     async processWithAI(userInput) {
         if (!this.app.currentPersona) {
@@ -116,8 +116,8 @@ export class ChatManager {
                 // Add messages first
                 aiResponse.dialogue.forEach((msg, index) => {
                     this.app.messages.push({
-                        sender: msg.speaker,
-                        content: msg.text,
+                        sender: InputSanitizer.sanitizeText(msg.speaker),
+                        content: InputSanitizer.sanitizeText(msg.text),
                         type: index % 2 === 0 ? 'npc-left' : 'npc-right', // Alternate left/right
                         audioUrl: null, // Will be set when audio is ready
                         conversationId: conversationId,
@@ -133,7 +133,7 @@ export class ChatManager {
                     individualAudioUrls.forEach((audioUrl, index) => {
                         if (audioUrl) {
                             const messageIndex = this.app.messages.length - aiResponse.dialogue.length + index;
-                            if (this.app.messages[messageIndex]) {
+                            if (messageIndex >= 0 && messageIndex < this.app.messages.length && this.app.messages[messageIndex]) {
                                 this.app.messages[messageIndex].audioUrl = audioUrl;
                             }
                         }
