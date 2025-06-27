@@ -6,7 +6,12 @@
       "Bash(grep:*)",
       "Bash(rg:*)",
       "WebFetch(domain:chatgpt.com)",
-      "WebFetch(domain:fal.ai)"
+      "WebFetch(domain:fal.ai)",
+      "Bash(python3:*)",
+      "Bash(jq:*)",
+      "Bash(curl:*)",
+      "Bash(mv:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }

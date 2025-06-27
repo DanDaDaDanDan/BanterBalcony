@@ -1,5 +1,5 @@
 // Chat and messaging functionality
-import { InputSanitizer } from '../utils.js';
+import { InputSanitizer } from './utils.js';
 
 export class ChatManager {
     constructor(app) {
@@ -146,6 +146,27 @@ export class ChatManager {
                     if (this.app.messages[firstMessageIndex]) {
                         this.app.messages[firstMessageIndex].conversationAudioUrl = conversationAudioUrl;
                     }
+                }
+
+                // Pre-concatenate audio in the background for instant playback
+                // This happens asynchronously and doesn't block the UI
+                if ((individualAudioUrls && individualAudioUrls.length > 0) || conversationAudioUrl) {
+                    console.log('Pre-concatenating audio for conversation:', conversationId);
+                    this.app.concatenatingConversations.add(conversationId);
+                    
+                    this.app.audioManager.createConcatenatedAudio(conversationId)
+                        .then(url => {
+                            if (url) {
+                                this.app.audioManager.audioCache.set(conversationId, url);
+                                console.log('Audio pre-concatenation complete for conversation:', conversationId);
+                            }
+                        })
+                        .catch(error => {
+                            console.warn('Audio pre-concatenation failed (will retry on play):', error);
+                        })
+                        .finally(() => {
+                            this.app.concatenatingConversations.delete(conversationId);
+                        });
                 }
 
             } else {

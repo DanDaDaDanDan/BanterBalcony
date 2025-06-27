@@ -31,14 +31,14 @@ export class InputSanitizer {
     static validateAPIKey(key, provider) {
         if (!key || typeof key !== 'string') return false;
         
-        // Basic validation patterns for different providers
+        // Basic validation patterns for different providers (relaxed)
         const patterns = {
-            openai: /^sk-[a-zA-Z0-9]{48}$/,
-            google: /^[a-zA-Z0-9_-]{39}$/,
-            elevenlabs: /^[a-f0-9]{32}$/,
-            xai: /^xai-[a-zA-Z0-9]+$/,
-            deepseek: /^sk-[a-zA-Z0-9]+$/,
-            fal: /^[a-zA-Z0-9:_-]+$/
+            openai: /^sk-[a-zA-Z0-9_-]{20,}$/,
+            google: /^[a-zA-Z0-9_-]{20,}$/,
+            elevenlabs: /^[a-f0-9]{20,}$/,
+            xai: /^xai-[a-zA-Z0-9_-]{10,}$/,
+            deepseek: /^sk-[a-zA-Z0-9_-]{10,}$/,
+            fal: /^[a-zA-Z0-9:_-]{10,}$/
         };
         
         // If no specific pattern, just check it's not empty and reasonable length
@@ -192,29 +192,3 @@ export async function safeRequest(url, options = {}) {
     }
 }
 
-// Audio resource cleanup tracker
-export class AudioResourceTracker {
-    static resources = new WeakMap();
-    static urls = new Set();
-    
-    static track(audio, url) {
-        this.resources.set(audio, url);
-        if (url) this.urls.add(url);
-    }
-    
-    static cleanup(audio) {
-        const url = this.resources.get(audio);
-        if (url && this.urls.has(url)) {
-            URL.revokeObjectURL(url);
-            this.urls.delete(url);
-        }
-        this.resources.delete(audio);
-    }
-    
-    static cleanupAll() {
-        for (const url of this.urls) {
-            URL.revokeObjectURL(url);
-        }
-        this.urls.clear();
-    }
-}

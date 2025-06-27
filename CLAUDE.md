@@ -27,7 +27,8 @@ The application uses ES6 modules with the following architecture:
 - **tts-providers.js**: TTS provider implementations (ElevenLabs, Google, fal.ai)
 - **chat.js**: Conversation management and message handling
 - **personas.js**: Template loading and persona management
-- **voice-profiles.js**: Voice mapping across different TTS providers
+- **voice-profiles.js**: Voice mapping across different TTS providers (loads from voice-profiles.json)
+- **voice-profiles.json**: Externalized voice profile data with provider mappings
 - **audio.js**: Audio playback queue management
 - **settings.js**: LocalStorage persistence layer
 - **voice-test.js**: Debug and batch testing functionality
@@ -58,3 +59,8 @@ When adding TTS providers:
 - **API Keys**: All keys are stored in browser LocalStorage
 - **Debug Logs**: Enable Debug View to see all API requests/responses
 - **Voice Profiles**: Use the voice profile system to maintain consistent voices across providers
+
+### Development Guidelines
+
+- **No Automatic Fallbacks**: Always ask the user before implementing fallback solutions. If something fails (e.g., loading external resources), show clear error messages explaining what went wrong rather than silently falling back to hardcoded values.
+- **Error Transparency**: When errors occur, provide clear information about what failed and how to fix it, rather than hiding the issue with automatic workarounds.

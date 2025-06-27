@@ -6,7 +6,7 @@ import { VoiceTestManager } from './voice-test.js';
 import { SettingsManager } from './settings.js';
 import { AudioManager } from './audio.js';
 import { VoiceProfileManager } from './voice-profiles.js';
-import { setupGlobalErrorHandler, InputSanitizer, ErrorHandler, SafeStorage } from '../utils.js';
+import { setupGlobalErrorHandler, InputSanitizer, ErrorHandler, SafeStorage } from './utils.js';
 
 window.banterBalconyApp = function() {
     const app = {
@@ -14,6 +14,7 @@ window.banterBalconyApp = function() {
                     currentView: 'chat',
         processing: false,
         showPersonaPrompt: false,
+        concatenatingConversations: new Set(), // Track which conversations are being pre-concatenated
         
         // Debug state
         debugInput: '',
@@ -25,6 +26,9 @@ window.banterBalconyApp = function() {
         // Voice profile state
         selectedVoiceProfile: null,
         editingVoiceProfile: false,
+        voiceProfilesLoading: true,
+        voiceProfileCount: 0,
+        voiceProfiles: [],
         
         // Provider settings
         selectedProvider: localStorage.getItem('selected_provider') || 'openai',
@@ -157,6 +161,7 @@ window.banterBalconyApp = function() {
             this.playMessageAudio = (message, messageIndex) => this.audioManager.playMessageAudio(message, messageIndex);
             this.playConversationAudio = (conversationAudioUrl) => this.audioManager.playConversationAudio(conversationAudioUrl);
             this.playGeminiConversationAudio = (conversationId) => this.audioManager.playGeminiConversationAudio(conversationId);
+            this.playAnyConversationAudio = (conversationId) => this.audioManager.playAnyConversationAudio(conversationId);
             this.stopAudio = () => this.audioManager.stopAudio();
             this.isAudioPlaying = (messageIndex) => this.audioManager.isPlaying(messageIndex);
             this.isConversationPlaying = () => this.audioManager.isConversationPlaying();
@@ -183,18 +188,22 @@ window.banterBalconyApp = function() {
                 const message = this.messages[messageIndex];
                 if (!message || !message.conversationId) return false;
                 
-                // Find the first message of this conversation to check for audio
-                const firstMessage = this.messages.find(m => 
-                    m.conversationId === message.conversationId && m.isConversationStart
+                // Get all messages for this conversation
+                const conversationMessages = this.messages.filter(m => 
+                    m.conversationId === message.conversationId
                 );
                 
-                if (!firstMessage) return false;
-                
-                const hasElevenLabsAudio = firstMessage.conversationAudioUrl;
-                const hasGeminiAudio = firstMessage.audioData;
-                
-                return (this.ttsProvider === 'elevenlabs' && hasElevenLabsAudio) || 
-                       (this.ttsProvider === 'gemini' && hasGeminiAudio);
+                // Check if at least one message has audio
+                return conversationMessages.some(m => 
+                    m.audioUrl || (m.audioData && m.audioMimeType)
+                );
+            };
+
+            // Helper method to check if a conversation is being concatenated
+            this.isConversationConcatenating = (messageIndex) => {
+                const message = this.messages[messageIndex];
+                if (!message || !message.conversationId) return false;
+                return this.concatenatingConversations.has(message.conversationId);
             };
             
             // Helper method to get the first message of a conversation
@@ -854,20 +863,31 @@ window.banterBalconyApp = function() {
             return template;
         },
         
-        // Save conversation audio to MP3 file
+        // Save conversation audio to file - concatenates individual message audio
         async saveConversationToFile(conversationId) {
             if (!conversationId) {
                 console.warn('No conversation ID provided for saving');
                 return;
             }
             
-            // Find the first message in this conversation (contains the audio data)
-            const firstMessage = this.messages.find(msg => 
-                msg.conversationId === conversationId && msg.isConversationStart
+            // Get all messages for this conversation in order
+            const conversationMessages = this.messages
+                .filter(m => m.conversationId === conversationId)
+                .sort((a, b) => a.timestamp - b.timestamp);
+
+            if (conversationMessages.length === 0) {
+                console.warn('No messages found for conversation:', conversationId);
+                return;
+            }
+
+            // Filter messages that have audio
+            const messagesWithAudio = conversationMessages.filter(m => 
+                m.audioUrl || (m.audioData && m.audioMimeType)
             );
-            
-            if (!firstMessage) {
-                console.warn('No conversation start message found for conversation ID:', conversationId);
+
+            if (messagesWithAudio.length === 0) {
+                console.warn('No audio available for conversation:', conversationId);
+                alert('No audio data available for this conversation. Make sure audio generation is enabled.');
                 return;
             }
             
@@ -875,54 +895,21 @@ window.banterBalconyApp = function() {
             const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
             
             try {
-                let audioBlob;
-                let filename;
+                // Get or create concatenated audio (uses cache if available)
+                const concatenatedAudioUrl = await this.audioManager.getOrCreateConcatenatedAudio(conversationId);
                 
-                if (this.ttsProvider === 'elevenlabs' && firstMessage.conversationAudioUrl) {
-                    // ElevenLabs: Download the conversation audio URL
-                    const response = await fetch(firstMessage.conversationAudioUrl);
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch ElevenLabs audio');
-                    }
-                    audioBlob = await response.blob();
-                    filename = `conversation_${personaName}_${timestamp}.mp3`;
-                    
-                } else if (this.ttsProvider === 'gemini' && firstMessage.audioData) {
-                    // Gemini: Convert base64 WAV data to blob
-                    const audioData = firstMessage.audioData;
-                    const mimeType = firstMessage.audioMimeType || 'audio/wav';
-                    
-                    // Decode base64 to binary
-                    const binaryString = atob(audioData);
-                    const bytes = new Uint8Array(binaryString.length);
-                    for (let i = 0; i < binaryString.length; i++) {
-                        bytes[i] = binaryString.charCodeAt(i);
-                    }
-                    
-                    audioBlob = new Blob([bytes], { type: mimeType });
-                    filename = `conversation_${personaName}_${timestamp}.wav`;
-                    
-                } else {
-                    // No audio available
-                    console.warn('No audio data available for this conversation');
-                    alert('No audio data available for this conversation. Make sure audio generation is enabled.');
-                    return;
+                if (!concatenatedAudioUrl) {
+                    throw new Error('Failed to concatenate audio');
                 }
                 
-                // Create and download the audio file
-                const url = URL.createObjectURL(audioBlob);
+                // Download the concatenated audio
+                const response = await fetch(concatenatedAudioUrl);
+                const audioBlob = await response.blob();
+                const filename = `conversation_${personaName}_${timestamp}.wav`;
                 
-                // Create download link and click it
-                const downloadLink = document.createElement('a');
-                downloadLink.href = url;
-                downloadLink.download = filename;
-                downloadLink.style.display = 'none';
-                document.body.appendChild(downloadLink);
-                downloadLink.click();
-                document.body.removeChild(downloadLink);
+                this.downloadBlob(audioBlob, filename);
                 
-                // Clean up the URL
-                URL.revokeObjectURL(url);
+                // Don't revoke the URL here since it might be cached
                 
                 console.log(`Conversation audio saved as: ${filename}`);
                 
@@ -930,6 +917,19 @@ window.banterBalconyApp = function() {
                 console.error('Error saving conversation audio:', error);
                 alert('Failed to save conversation audio. Please try again.');
             }
+        },
+
+        // Helper method to download a blob as a file
+        downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            downloadLink.download = filename;
+            downloadLink.style.display = 'none';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            URL.revokeObjectURL(url);
         }
     };
     

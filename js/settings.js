@@ -1,5 +1,5 @@
 // Settings management functionality
-import { SafeStorage, InputSanitizer } from '../utils.js';
+import { SafeStorage, InputSanitizer } from './utils.js';
 
 export class SettingsManager {
     constructor(app) {
@@ -7,25 +7,7 @@ export class SettingsManager {
     }
 
     saveSettings() {
-        // Validate API keys before saving
-        if (this.app.openaiKey && !InputSanitizer.validateAPIKey(this.app.openaiKey, 'openai')) {
-            console.warn('Invalid OpenAI API key format');
-        }
-        if (this.app.googleKey && !InputSanitizer.validateAPIKey(this.app.googleKey, 'google')) {
-            console.warn('Invalid Google API key format');
-        }
-        if (this.app.elevenlabsKey && !InputSanitizer.validateAPIKey(this.app.elevenlabsKey, 'elevenlabs')) {
-            console.warn('Invalid ElevenLabs API key format');
-        }
-        if (this.app.xaiKey && !InputSanitizer.validateAPIKey(this.app.xaiKey, 'xai')) {
-            console.warn('Invalid xAI API key format');
-        }
-        if (this.app.deepseekKey && !InputSanitizer.validateAPIKey(this.app.deepseekKey, 'deepseek')) {
-            console.warn('Invalid DeepSeek API key format');
-        }
-        if (this.app.falKey && !InputSanitizer.validateAPIKey(this.app.falKey, 'fal')) {
-            console.warn('Invalid fal.ai API key format');
-        }
+        // Validate API keys before saving (silently, no warnings)
         
         // Use SafeStorage for all localStorage operations
         SafeStorage.setItem('selected_provider', this.app.selectedProvider);

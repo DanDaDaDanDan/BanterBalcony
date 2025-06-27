@@ -6,7 +6,7 @@
             <title>Banter Balcony - AI-Powered Banter Generator</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎭</text></svg>">
     <link rel="stylesheet" href="styles.css">
-    <script type="module" src="utils.js"></script>
+    <script type="module" src="js/utils.js"></script>
     <script type="module" src="js/app.js"></script>
 </head>
 <body x-data="banterBalconyApp()">
@@ -79,24 +79,29 @@
                                 
                                 <!-- Conversation Play Button - Fixed Position After Each Conversation -->
                                 <div x-show="isLastMessageInConversation(index) && conversationHasAudio(index)" class="conversation-controls">
-                                    <button 
-                                        @click="ttsProvider === 'elevenlabs' ? 
-                                            playConversationAudio(getConversationFirstMessage(index)?.conversationAudioUrl) :
-                                            playGeminiConversationAudio(message.conversationId)"
-                                        class="conversation-btn conversation-play-btn"
-                                        :class="{'playing': isConversationPlaying()}"
-                                        :title="isConversationPlaying() ? 'Stop conversation' : 'Play conversation'"
-                                    >
-                                        <span x-show="!isConversationPlaying()">▶ Play Conversation</span>
-                                        <span x-show="isConversationPlaying()">⏹ Stop Conversation</span>
-                                    </button>
-                                    <button 
-                                        @click="saveConversation(message.conversationId)"
-                                        class="conversation-btn conversation-save-btn"
-                                        title="Save conversation"
-                                    >
-                                        💾 Save
-                                    </button>
+                                    <!-- Loading indicator while concatenating -->
+                                    <div x-show="isConversationConcatenating(index)" class="conversation-loading">
+                                        <span>🔄 Preparing audio...</span>
+                                    </div>
+                                    <!-- Play and Save buttons when ready -->
+                                    <div x-show="!isConversationConcatenating(index)" class="conversation-buttons">
+                                        <button 
+                                            @click="playAnyConversationAudio(message.conversationId)"
+                                            class="conversation-btn conversation-play-btn"
+                                            :class="{'playing': isConversationPlaying()}"
+                                            :title="isConversationPlaying() ? 'Stop conversation' : 'Play conversation'"
+                                        >
+                                            <span x-show="!isConversationPlaying()">▶ Play Conversation</span>
+                                            <span x-show="isConversationPlaying()">⏹ Stop Conversation</span>
+                                        </button>
+                                        <button 
+                                            @click="saveConversation(message.conversationId)"
+                                            class="conversation-btn conversation-save-btn"
+                                            title="Save conversation"
+                                        >
+                                            💾 Save
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </template>
@@ -190,20 +195,19 @@
             <!-- Voices View -->
             <div x-show="currentView === 'voices'" class="voices-view">
                 <div class="voices-container">
-                    <h2>Voice Profiles</h2>
-                    
                     <div class="voices-content">
                         <!-- Voice Profile Gallery -->
                         <div class="voice-profiles-section">
                             <div class="voices-header">
-                                <h3>Voice Gallery</h3>
+                                <h3>Voice Profiles</h3>
                                 <div class="voice-stats">
-                                    <span x-text="voiceProfileManager.getAllProfiles().length + ' profiles available'"></span>
+                                    <span x-show="voiceProfilesLoading">Loading profiles...</span>
+                                    <span x-show="!voiceProfilesLoading" x-text="voiceProfileCount + ' profiles available'"></span>
                                 </div>
                             </div>
                             
-                            <div class="voice-profiles-grid">
-                                <template x-for="profile in voiceProfileManager.getAllProfiles()" :key="profile.id">
+                            <div x-show="!voiceProfilesLoading" class="voice-profiles-grid">
+                                <template x-for="profile in voiceProfiles" :key="profile.id">
                                     <div class="voice-profile-card">
                                         <div class="voice-profile-header">
                                             <h3 x-text="profile.name"></h3>
@@ -264,10 +268,21 @@
                                 </template>
                             </div>
                             
-                            <div x-show="voiceProfileManager.getAllProfiles().length === 0" class="no-voice-profiles">
+                            <div x-show="voiceProfilesLoading" class="loading-profiles">
                                 <div class="empty-state">
-                                    <h4>No Voice Profiles Found</h4>
-                                    <p>Voice profiles help manage consistent voice characteristics across different TTS providers. You can create them programmatically or import from configuration files.</p>
+                                    <h4>Loading Voice Profiles...</h4>
+                                    <p>Please wait while voice profiles are loaded from configuration.</p>
+                                </div>
+                            </div>
+                            
+                            <div x-show="!voiceProfilesLoading && voiceProfileCount === 0" class="no-voice-profiles">
+                                <div class="empty-state">
+                                    <h4>Voice Profiles Could Not Be Loaded</h4>
+                                    <p>Unable to load voice profiles from data/voice-profiles.json. Please ensure:</p>
+                                    <ul style="text-align: left; margin: 10px auto; max-width: 400px;">
+                                        <li>The application is served via HTTP (not file://)</li>
+                                        <li>The voice-profiles.json file exists in the data directory</li>
+                                    </ul>
                                 </div>
                             </div>
                         </div>
@@ -323,16 +338,18 @@
                     <!-- API Keys Section -->
                     <div class="settings-group">
                         <h3>API Keys</h3>
-                        <form @submit.prevent="">
+                        <div class="api-keys-form">
                             <div class="form-group">
                                 <label>OpenAI API Key</label>
-                                <input 
-                                    type="password" 
-                                    x-model="openaiKey" 
-                                    @change="saveSettings()"
-                                    placeholder="Enter your OpenAI API key"
-                                    autocomplete="off"
-                                />
+                                <form>
+                                    <input 
+                                        type="password" 
+                                        x-model="openaiKey" 
+                                        @change="saveSettings()"
+                                        placeholder="Enter your OpenAI API key"
+                                        autocomplete="off"
+                                    />
+                                </form>
                                 <div class="temperature-description" style="margin-top: 0.5rem;">
                                     <small>Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" style="color: var(--secondary-color)">OpenAI Platform</a></small>
                                 </div>
@@ -340,13 +357,15 @@
                             
                             <div class="form-group">
                                 <label>Google AI API Key</label>
-                                <input 
-                                    type="password" 
-                                    x-model="googleKey" 
-                                    @change="saveSettings()"
-                                    placeholder="Enter your Google AI API key"
-                                    autocomplete="off"
-                                />
+                                <form>
+                                    <input 
+                                        type="password" 
+                                        x-model="googleKey" 
+                                        @change="saveSettings()"
+                                        placeholder="Enter your Google AI API key"
+                                        autocomplete="off"
+                                    />
+                                </form>
                                 <div class="temperature-description" style="margin-top: 0.5rem;">
                                     <small>Get your API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--secondary-color)">Google AI Studio</a></small>
                                 </div>
@@ -354,13 +373,15 @@
                             
                             <div class="form-group">
                                 <label>xAI API Key</label>
-                                <input 
-                                    type="password" 
-                                    x-model="xaiKey" 
-                                    @change="saveSettings()"
-                                    placeholder="Enter your xAI API key"
-                                    autocomplete="off"
-                                />
+                                <form>
+                                    <input 
+                                        type="password" 
+                                        x-model="xaiKey" 
+                                        @change="saveSettings()"
+                                        placeholder="Enter your xAI API key"
+                                        autocomplete="off"
+                                    />
+                                </form>
                                 <div class="temperature-description" style="margin-top: 0.5rem;">
                                     <small>Get your API key from <a href="https://console.x.ai" target="_blank" style="color: var(--secondary-color)">xAI Console</a></small>
                                 </div>
@@ -368,13 +389,15 @@
                             
                             <div class="form-group">
                                 <label>DeepSeek API Key</label>
-                                <input 
-                                    type="password" 
-                                    x-model="deepseekKey" 
-                                    @change="saveSettings()"
-                                    placeholder="Enter your DeepSeek API key"
-                                    autocomplete="off"
-                                />
+                                <form>
+                                    <input 
+                                        type="password" 
+                                        x-model="deepseekKey" 
+                                        @change="saveSettings()"
+                                        placeholder="Enter your DeepSeek API key"
+                                        autocomplete="off"
+                                    />
+                                </form>
                                 <div class="temperature-description" style="margin-top: 0.5rem;">
                                     <small>Get your API key from <a href="https://platform.deepseek.com/api_keys" target="_blank" style="color: var(--secondary-color)">DeepSeek Platform</a></small>
                                 </div>
@@ -382,13 +405,15 @@
                             
                             <div class="form-group">
                                 <label>ElevenLabs API Key</label>
-                                <input 
-                                    type="password" 
-                                    x-model="elevenlabsKey" 
-                                    @change="saveSettings()"
-                                    placeholder="Enter your ElevenLabs API key"
-                                    autocomplete="off"
-                                />
+                                <form>
+                                    <input 
+                                        type="password" 
+                                        x-model="elevenlabsKey" 
+                                        @change="saveSettings()"
+                                        placeholder="Enter your ElevenLabs API key"
+                                        autocomplete="off"
+                                    />
+                                </form>
                                 <div class="temperature-description" style="margin-top: 0.5rem;">
                                     <small>Get your API key from <a href="https://elevenlabs.io/api" target="_blank" style="color: var(--secondary-color)">ElevenLabs API</a></small>
                                 </div>
@@ -396,18 +421,20 @@
                             
                             <div class="form-group">
                                 <label>fal.ai API Key</label>
-                                <input 
-                                    type="password" 
-                                    x-model="falKey" 
-                                    @change="saveSettings()"
-                                    placeholder="Enter your fal.ai API key"
-                                    autocomplete="off"
-                                />
+                                <form>
+                                    <input 
+                                        type="password" 
+                                        x-model="falKey" 
+                                        @change="saveSettings()"
+                                        placeholder="Enter your fal.ai API key"
+                                        autocomplete="off"
+                                    />
+                                </form>
                                 <div class="temperature-description" style="margin-top: 0.5rem;">
                                     <small>Get your API key from <a href="https://fal.ai/dashboard" target="_blank" style="color: var(--secondary-color)">fal.ai dashboard</a></small>
                                 </div>
                             </div>
-                        </form>
+                        </div>
                     </div>
                     
                     <!-- Text Generation Settings -->

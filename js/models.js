@@ -1,5 +1,5 @@
 // AI Models and API Provider implementations
-import { safeRequest, ErrorHandler, safeJSONParse } from '../utils.js';
+import { safeRequest, ErrorHandler, safeJSONParse } from './utils.js';
 
 export class AIModels {
     constructor(app) {
