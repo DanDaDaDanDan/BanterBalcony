@@ -66,12 +66,11 @@ export class VoiceProfile {
     }
 }
 
-// Voice Profile Manager - Loads read-only voice profiles from JSON and manages template mappings
+// Voice Profile Manager - Loads read-only voice profiles from JSON
 export class VoiceProfileManager {
     constructor(app) {
         this.app = app;
         this.profiles = new Map(); // Read-only profiles loaded from voice-profiles.json
-        this.templateMappings = new Map(); // User template:speaker to voice profile ID mappings (saved to localStorage)
         this.loadProfiles();
     }
     
@@ -133,49 +132,10 @@ export class VoiceProfileManager {
         return Array.from(this.profiles.values());
     }
     
-    // Template mapping operations
-    setTemplateMapping(templateName, speaker, profileId) {
-        const key = `${templateName}:${speaker}`;
-        this.templateMappings.set(key, profileId);
-    }
-    
-    getTemplateMapping(templateName, speaker) {
-        const key = `${templateName}:${speaker}`;
-        return this.templateMappings.get(key);
-    }
-    
-    removeTemplateMapping(templateName, speaker) {
-        const key = `${templateName}:${speaker}`;
-        return this.templateMappings.delete(key);
-    }
-    
-    getTemplateMappings(templateName) {
-        const mappings = {};
-        this.templateMappings.forEach((profileId, key) => {
-            if (key.startsWith(templateName + ':')) {
-                const speaker = key.substring(templateName.length + 1);
-                mappings[speaker] = profileId;
-            }
-        });
-        return mappings;
-    }
     
     // Get voice configuration for TTS generation
     getVoiceConfig(templateName, speaker, provider) {
-        // First check template-specific mapping
-        const profileId = this.getTemplateMapping(templateName, speaker);
-        if (profileId) {
-            const profile = this.getProfile(profileId);
-            if (profile) {
-                const config = profile.getProviderConfig(provider);
-                if (config) {
-                    return { profile, config };
-                }
-            }
-        }
-        
-        // Fallback to default based on characteristics if needed
-        // This could be enhanced with better matching logic
+        // Get default voice configuration based on characteristics
         const profiles = this.getAllProfiles();
         for (const profile of profiles) {
             if (profile.hasProvider(provider)) {
@@ -195,33 +155,10 @@ export class VoiceProfileManager {
         });
     }
     
-    // Import/Export functionality
+    // Export functionality (read-only profiles)
     exportProfiles() {
         return {
-            profiles: this.getAllProfiles().map(p => p.toJSON()),
-            mappings: Object.fromEntries(this.templateMappings)
+            profiles: this.getAllProfiles().map(p => p.toJSON())
         };
-    }
-    
-    importProfiles(data) {
-        try {
-            if (data.profiles) {
-                data.profiles.forEach(profileData => {
-                    const profile = new VoiceProfile(profileData);
-                    this.profiles.set(profile.id, profile);
-                });
-            }
-            
-            if (data.mappings) {
-                Object.entries(data.mappings).forEach(([key, profileId]) => {
-                    this.templateMappings.set(key, profileId);
-                });
-            }
-            
-            return true;
-        } catch (error) {
-            console.error('Error importing profiles:', error);
-            return false;
-        }
     }
 } 

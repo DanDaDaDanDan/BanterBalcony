@@ -79,29 +79,27 @@
                                 
                                 <!-- Conversation Play Button - Fixed Position After Each Conversation -->
                                 <div x-show="isLastMessageInConversation(index) && conversationHasAudio(index)" class="conversation-controls">
-                                    <!-- Loading indicator while concatenating -->
-                                    <div x-show="isConversationConcatenating(index)" class="conversation-loading">
-                                        <span>🔄 Preparing audio...</span>
-                                    </div>
-                                    <!-- Play and Save buttons when ready -->
-                                    <div x-show="!isConversationConcatenating(index)" class="conversation-buttons">
-                                        <button 
-                                            @click="playAnyConversationAudio(message.conversationId)"
-                                            class="conversation-btn conversation-play-btn"
-                                            :class="{'playing': isConversationPlaying()}"
-                                            :title="isConversationPlaying() ? 'Stop conversation' : 'Play conversation'"
-                                        >
-                                            <span x-show="!isConversationPlaying()">▶ Play Conversation</span>
-                                            <span x-show="isConversationPlaying()">⏹ Stop Conversation</span>
-                                        </button>
-                                        <button 
-                                            @click="saveConversation(message.conversationId)"
-                                            class="conversation-btn conversation-save-btn"
-                                            title="Save conversation"
-                                        >
-                                            💾 Save
-                                        </button>
-                                    </div>
+                                    <span x-show="isConversationConcatenating(index)" class="conversation-loading">
+                                        🔄 Preparing audio...
+                                    </span>
+                                    <button 
+                                        x-show="!isConversationConcatenating(index)"
+                                        @click="playAnyConversationAudio(message.conversationId)"
+                                        class="conversation-btn conversation-play-btn"
+                                        :class="{'playing': isConversationPlaying()}"
+                                        :title="isConversationPlaying() ? 'Stop conversation' : 'Play conversation'"
+                                    >
+                                        <span x-show="!isConversationPlaying()">▶ Play Conversation</span>
+                                        <span x-show="isConversationPlaying()">⏹ Stop Conversation</span>
+                                    </button>
+                                    <button 
+                                        x-show="!isConversationConcatenating(index)"
+                                        @click="saveConversation(message.conversationId)"
+                                        class="conversation-btn conversation-save-btn"
+                                        title="Save conversation"
+                                    >
+                                        Save
+                                    </button>
                                 </div>
                             </div>
                         </template>
